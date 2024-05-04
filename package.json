@@ -1,0 +1,15 @@
+{
+  "name": "ts2uml",
+  "version": "1.0.0",
+  "description": "typescript to uml",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "ts",
+    "uml"
+  ],
+  "author": "tintin",
+  "license": "ISC"
+}
