@@ -4,6 +4,7 @@
   "description": "typescript to uml",
   "main": "index.js",
   "scripts": {
+    
     "test": "jest"
   },
   "keywords": [

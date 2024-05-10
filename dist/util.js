@@ -2,6 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateRequestId = void 0;
 function generateRequestId() {
-    return (new Date().toISOString() + "" + Math.random().toString().substring(0, 3)).replace(/[-:.TZ/]/g, "");
+    return ("R" + new Date().toISOString() + "" + Math.random().toString().substring(0, 3)).replace(/[-:.TZ/]/g, "");
 }
 exports.generateRequestId = generateRequestId;
