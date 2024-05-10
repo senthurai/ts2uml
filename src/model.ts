@@ -8,6 +8,13 @@ export class GraphNode {
 }
 
 export class SequenceGraph {
+  requestId: string = "";
+  _getRequestId() {
+    return this.requestId;
+  }
+  _setRequestId(requestId: any) {
+    this.requestId = requestId;
+  }
   graphs: { [key: string]: GraphNode } = {};
 }
 

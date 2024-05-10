@@ -2,7 +2,9 @@
   "name": "ts2uml",
   "version": "1.0.0",
   "description": "typescript to uml",
-  "main": "index.js",
+   
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     
     "test": "jest"
