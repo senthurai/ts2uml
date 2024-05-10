@@ -1,9 +1,8 @@
 // Create a decorator function to apply annotations
 
-import { SequenceRequest } from "./model";
+import { SequenceRequest, _graphs } from "./model";
 import { getSequence, sequence } from "./sequence";
 import { generateRequestId } from "./util";
-import { GraphNode, _graphs } from "./model";
 const sr: SequenceRequest = { requestId: generateRequestId() };
 // Example usage
 class MyClass {
