@@ -1,18 +1,17 @@
 {
   "name": "ts2uml",
-  "version": "1.0.0",
-  "description": "typescript to uml",
-   
+  "version": "0.0.2",
+  "description": "typescript workflow to uml sequence",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    
+    "build": "tsc",
     "test": "jest"
   },
   "keywords": [
     "ts",
     "uml"
   ],
-  "author": "tintin",
+  "author": "tin2tin",
   "license": "ISC"
 }
