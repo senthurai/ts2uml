@@ -49,7 +49,7 @@ getSequence("R12");
 
 ```
 
-![Sequence Image](seq.png)
+![Sequence Image](./seq.png)
 
 3. The sequence decorator will modify the original method to apply a graph sequence. It creates a new GraphNode if one does not already exist for the requestId, applies the graph sequence, and handles any errors that occur during the execution of the original method.
 

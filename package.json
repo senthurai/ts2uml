@@ -1,11 +1,11 @@
 {
   "name": "ts2uml",
-  "version": "0.0.2",
+  "version": "0.0.7",
   "description": "typescript workflow to uml sequence",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && terser -c -m -o ./dist/index.min.js -- ./dist/index.js && cp ./package.json ./README.md ./seq.png ./dist ",
     "test": "jest"
   },
   "keywords": [
@@ -13,5 +13,9 @@
     "uml"
   ],
   "author": "tin2tin",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "terser": "^5.31.0"
+  }
+  
 }
