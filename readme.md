@@ -4,7 +4,7 @@ This is a project that converts TypeScript to UML.
 
 ## Description
 
-This project, ts2uml, is designed to convert TypeScript code into UML diagrams. It's currently at version 0.0.1.
+This project, ts2uml, is designed to convert TypeScript code into UML diagrams.
 
 ### To use the sequence decorator in your TypeScript classes, follow these steps:
 
@@ -21,7 +21,7 @@ This project, ts2uml, is designed to convert TypeScript code into UML diagrams. 
 /**
 * class declaration annotated
 class MyClass {
-    @sequence()
+    @uml()
     public myMethod() {
         // Method implementation
     }

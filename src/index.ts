@@ -1,3 +1,3 @@
-import { setSequenceId, sequence, getSequence } from "./sequence";
+import { setSequenceId, uml, getSequence } from "./uml";
 
-export { setSequenceId, sequence, getSequence };
+export { setSequenceId, uml , getSequence };

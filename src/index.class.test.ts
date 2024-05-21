@@ -1,11 +1,10 @@
 // Create a decorator function to apply annotations
 
 import { _graphs } from "./model";
-import { getSequence, sequence, setSequenceId } from "./sequence";
+import { getSequence, uml, setSequenceId } from "./uml";
 
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-@sequence()
+ 
 export class MyClass {
   i = 0;
 
@@ -37,9 +36,7 @@ class MyClass2 {
     // Method implementation
   }
 }
-
-setSequenceId("R12");
-
+ 
 console.log("1.Hello world");
 let l1: MyClass = new MyClass("d");
 console.log("2.Hello world");

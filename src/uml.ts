@@ -1,3 +1,5 @@
+
+import { _getSequence } from "./graph-node-parser";
 import { GraphNode, _graphs } from "./model";
 const defaultFn = ["constructor", "__defineGetter__", "__defineSetter__", "hasOwnProperty", "__lookupGetter__", "__lookupSetter__", "isPrototypeOf", "propertyIsEnumerable", "toString", "valueOf", "__proto__", "toLocaleString"]
 /**
@@ -7,9 +9,10 @@ const defaultFn = ["constructor", "__defineGetter__", "__defineSetter__", "hasOw
  *
  * @returns {Function} - A function that replaces the original method.
  */
-
-export function sequence(): Function {
+export function uml(obj): Function {
+ 
   return function (method: any, caller: any, d: PropertyDescriptor) {
+    
     if ((caller && caller?.kind === "class") || (method?.prototype && method?.prototype?.constructor?.name === method?.name)) {
       return handleClass(d, method);
     } else {
@@ -42,11 +45,14 @@ function handleClass(d: PropertyDescriptor, _class: any) {
 
 }
 
+
 function handleFn(d: PropertyDescriptor, method: any) {
   const originalMethod: any = (d && d.value) || method;
+
   const overidden = function (this: any, ...args: any[]) {
     try {
-      
+     method
+     d
       const result = _applyGraph.call(this, originalMethod, args);
       return result;
     } catch (e) {
@@ -61,7 +67,7 @@ function handleFn(d: PropertyDescriptor, method: any) {
   }
 }
 
-export function setSequenceId(requestId: string) {
+export function setSequenceId(obj: any, requestId: string) {
   _graphs._setRequestId(requestId);
 }
 
@@ -75,57 +81,16 @@ function _applyGraph(this: any, originalMethod: any, args: any[]) {
   let oldNode = _graphs.graphs[requestId];
   if (requestId) {
     if (!oldNode) {
-      oldNode = new GraphNode(requestId, "", args.length ? JSON.stringify(args) : "", undefined, []);
+      oldNode = new GraphNode(requestId, "", args.length ? JSON.stringify(args) : "", undefined,new Date().toISOString(), undefined);
       _graphs.graphs[requestId] = oldNode;
     }
-    const newNode = new GraphNode(className, originalMethod.name, args.length ? JSON.stringify(args) : "", oldNode);
+    const newNode = new GraphNode(className, originalMethod.name, args.length ? JSON.stringify(args) : "","",new Date().toISOString(), oldNode);
     oldNode!.children.push(newNode);
     _graphs.graphs[requestId] = newNode;
   }
   const result = originalMethod.call(this, ...args);
-  requestId && (_graphs.graphs[requestId] = oldNode);
+  requestId && (_graphs.graphs[requestId] = oldNode) && result && (oldNode.response = JSON.stringify(result));
   return result;
 }
 
-/**
- * This function generates a sequence diagram.
- * It takes a SequenceRequest as a parameter, which contains the requestId.
- * The function finds the GraphNode associated with the requestId and traverses up the graph to the root node.
- * It then traverse and generates the sequence diagram .
- *
- * @returns {string} - A string representing the sequence diagram.
- */
-export function getSequence(): string {
-  let node: GraphNode | undefined;
-  return (
-    "sequenceDiagram\n" +
-    Object.keys(_graphs.graphs)
-      .map((key) => {
-        node = _graphs.graphs[key];
-        while (node.parent) {
-          _graphs.graphs[key] = node.parent;
-          node = node.parent;
-        }
-        let seq = getSequenceFromNode(node);
-        delete _graphs.graphs[key]
-        return "sequenceDiagram\n" +seq;
- 
-      })
-      .join("\n")
-  ) ;
-}
-
-function getSequenceFromNode(node: GraphNode) {
-  let sequence = "";
-  if (node.parent) {
-    sequence = `${node.parent?.actor} ->> ${node.actor}:${node.name}`;
-  }
-  for (let i = 0; i < node.children.length; i++) {
-    let seq = getSequenceFromNode(node.children[i]);
-    sequence = `${sequence}\n${seq}`;
-  }
-
-  return sequence;
-}
-
-// Function to write a generate sequence diagram
+export const getSequence = _getSequence

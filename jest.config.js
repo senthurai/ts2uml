@@ -1,7 +1,7 @@
 //jest configuration
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/?(*.)+(spec|test).[tj]s?(x)'], 
+  testMatch: ['./src/(.)+(spec|test).[tj]s?(x)'], 
   testTimeout: 30000,
   verbose: true,
   collectCoverage: true,
