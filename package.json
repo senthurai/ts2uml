@@ -1,12 +1,13 @@
 {
   "name": "ts2uml",
-  "version": "0.0.8",
+  "version": "0.0.19",
   "description": "typescript workflow to uml sequence",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "build": "tsc && terser -c -m -o ./dist/index.min.js -- ./dist/index.js && cp ./package.json ./README.md ./seq.png ./dist ",
-    "test": "jest"
+    "build": "tsc && terser -c -m -o ./dist/index.min.js -- ./dist/index.js && cp ./package.json ./src/uml-sprinkler* ./README.md ./dist ",
+    "test": "jest",
+    "uml-sprinkler": "uml-sprinkler src/test"
   },
   "keywords": [
     "ts",
@@ -15,8 +16,8 @@
   "author": "tin2tin",
   "license": "ISC",
   "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "jest": "^29.7.0",
-    "terser": "^5.31.0"
+    "@types/node": "^20.12.12",
+    "terser": "^5.31.0",
+    "ts2uml": "^0.0.19"
   }
 }

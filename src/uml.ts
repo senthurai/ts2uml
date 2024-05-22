@@ -9,10 +9,10 @@ const defaultFn = ["constructor", "__defineGetter__", "__defineSetter__", "hasOw
  *
  * @returns {Function} - A function that replaces the original method.
  */
-export function uml(obj): Function {
- 
+export function uml(): Function {
+
   return function (method: any, caller: any, d: PropertyDescriptor) {
-    
+
     if ((caller && caller?.kind === "class") || (method?.prototype && method?.prototype?.constructor?.name === method?.name)) {
       return handleClass(d, method);
     } else {
@@ -50,15 +50,11 @@ function handleFn(d: PropertyDescriptor, method: any) {
   const originalMethod: any = (d && d.value) || method;
 
   const overidden = function (this: any, ...args: any[]) {
-    try {
-     method
-     d
-      const result = _applyGraph.call(this, originalMethod, args);
-      return result;
-    } catch (e) {
-      console.log("Error in method " + originalMethod.name);
-      throw e;
-    }
+
+
+    const result = _applyGraph.call(this, originalMethod, args);
+    return result;
+
   };
   if (d) {
     d.value = overidden;
@@ -67,7 +63,7 @@ function handleFn(d: PropertyDescriptor, method: any) {
   }
 }
 
-export function setSequenceId(obj: any, requestId: string) {
+export function setSequenceId(requestId: string) {
   _graphs._setRequestId(requestId);
 }
 
@@ -81,16 +77,27 @@ function _applyGraph(this: any, originalMethod: any, args: any[]) {
   let oldNode = _graphs.graphs[requestId];
   if (requestId) {
     if (!oldNode) {
-      oldNode = new GraphNode(requestId, "", args.length ? JSON.stringify(args) : "", undefined,new Date().toISOString(), undefined);
+      oldNode = new GraphNode(requestId, "", args.length ? JSON.stringify(args) : "", undefined, new Date().toISOString(), undefined);
       _graphs.graphs[requestId] = oldNode;
     }
-    const newNode = new GraphNode(className, originalMethod.name, args.length ? JSON.stringify(args) : "","",new Date().toISOString(), oldNode);
+    const newNode = new GraphNode(className, originalMethod.name, args.length ? JSON.stringify(args) : "", "", new Date().toISOString(), oldNode);
     oldNode!.children.push(newNode);
     _graphs.graphs[requestId] = newNode;
   }
-  const result = originalMethod.call(this, ...args);
-  requestId && (_graphs.graphs[requestId] = oldNode) && result && (oldNode.response = JSON.stringify(result));
-  return result;
+  try {
+    const result = originalMethod.call(this, ...args);
+    requestId && (_graphs.graphs[requestId] = oldNode) && result && (oldNode.response = JSON.stringify(result));
+
+    return result;
+  } catch (e) {
+    if (requestId) {
+      _graphs.graphs[requestId] = oldNode;
+      oldNode.response = JSON.stringify(e.message);
+      _getSequence();
+      setSequenceId(requestId)
+    }
+    throw e;
+  }
 }
 
 export const getSequence = _getSequence

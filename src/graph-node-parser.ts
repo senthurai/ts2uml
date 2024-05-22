@@ -40,14 +40,19 @@ function abbreviate(actor: string, dedups: string[]) {
   dedups.push(actor);
   return a
 }
+function fntoReadable(params:string) {
+  return params.replace(/([A-Z])/g, " $1").replace(/^./, function (str) { return str.toUpperCase(); })
+  
+}
+
 function getSequenceFromNode(node: GraphNode, dedups = []) {
   let sequence = "";
   if (node.parent) {
-    !dedups.includes(node.parent.actor) && (sequence += `participant ${abbreviate(node.parent.actor, dedups)} as ${node.parent.actor} \n`)
-    !dedups.includes(node.actor) && (sequence += `participant ${abbreviate(node.actor, dedups)} as ${node.actor} \n`)
+    !dedups.includes(node.parent.actor) && (sequence += `participant ${abbreviate(node.parent.actor, dedups)} as ${fntoReadable(node.parent.actor)} \n`)
+    !dedups.includes(node.actor) && (sequence += `participant ${abbreviate(node.actor, dedups)} as ${fntoReadable(node.actor)} \n`)
     const actorSrc = abbreviate(node.parent.actor, dedups);
     const actorDest = abbreviate(node.actor, dedups);
-    sequence += `${actorSrc} ->>+ ${actorDest}: ${node.type}`;
+    sequence += `${actorSrc} ->>+ ${actorDest}: ${fntoReadable(node.type)}`;
     dedups.includes(node.timestamp) || (sequence += `\nNote left of ${actorSrc}:${node.timestamp}`) && dedups.push(node.timestamp);
     node.method && (sequence += `\nNote over ${actorSrc},${actorDest}:`+ node.method)
 
