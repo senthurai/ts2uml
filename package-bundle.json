@@ -5,20 +5,17 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "build": "tsc && terser -c -m -o ./dist/index.min.js -- ./dist/index.js   && cp ./package-bundle.json ./dist/package.json && cp ./src/uml-sprinkler* ./README.md ./dist ",
+    "build": "tsc && terser -c -m -o ./dist/index.min.js -- ./dist/index.js && cp ./package-bundle.json ./dist/package.json && cp ./src/uml-sprinkler* ./README.md ./dist ",
     "test": "jest",
     "uml-sprinkler": "uml-sprinkler src/test",
     "postinstall": "node post-install"
   },
-  "keywords": [
-    "ts",
-    "uml"
-  ],
+  "keywords": ["ts", "uml"],
   "author": "tin2tin",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.12.12",
     "terser": "^5.31.0",
     "ts2uml": "^0.0.19"
-  } 
+  }
 }
