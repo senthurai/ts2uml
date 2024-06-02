@@ -1,20 +1,18 @@
 {
   "name": "ts2uml",
-  "version": "0.0.20",
+  "version": "0.0.23",
   "description": "typescript workflow to uml sequence",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "build": "tsc && terser -c -m -o ./dist/index.min.js -- ./dist/index.js && cp ./package-bundle.json ./dist/package.json && cp ./src/uml-sprinkler* ./README.md ./dist ",
+    "build": "tsc",
     "test": "jest",
-    "uml-sprinkler": "uml-sprinkler src/test",
     "postinstall": "node post-install"
   },
   "keywords": ["ts", "uml"],
   "author": "tin2tin",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^20.12.12",
-    "terser": "^5.31.0"
+    "@types/node": "^20.12.12"
   }
 }

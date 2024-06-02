@@ -1,9 +1,7 @@
 
 
-// Create a decorator function to apply annotations 
-import { _graphs } from "../model";
-import { getSequence, setSequenceId, uml } from "../uml-decorator";
-import { getFlowDiagram } from '../flow-diagram';
+// Create a decorator function to apply annotations  
+import { getFlowDiagram, getSequence, getSequenceTemplate, setSequenceId, uml } from "../uml-decorator";
 
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 //
@@ -72,4 +70,5 @@ setSequenceId("R12");
 Promise.all(l).then(() => {
   console.log("----" + getFlowDiagram() + "----");
   console.log("----" + getSequence() + "----");
+  console.log("----" + getSequenceTemplate() + "----");
 });

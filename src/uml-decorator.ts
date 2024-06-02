@@ -1,6 +1,7 @@
 
-import { _getSequence } from "./sequence-diagram";
+import { _getSequence, _getSequenceTemplate } from './sequence-diagram';
 import { GraphNode, NodeType, _graphs } from "./model";
+import { _getFlowDiagram } from "./flow-diagram";
 const defaultFn = ["constructor", "__defineGetter__", "__defineSetter__", "hasOwnProperty", "__lookupGetter__", "__lookupSetter__", "isPrototypeOf", "propertyIsEnumerable", "toString", "valueOf", "__proto__", "toLocaleString"]
 /**
  * This decorator function modifies the original method to apply a graph sequence.
@@ -108,5 +109,7 @@ function handleResponse(result: any, pop: { className: string, method: string },
 }
 
 export const getSequence = _getSequence
+export const getFlowDiagram = _getFlowDiagram;
+export const getSequenceTemplate = _getSequenceTemplate; 
 
 

@@ -1,6 +1,6 @@
 #!/bin/bash 
 # Array of files to copy
-files=("package-bundle.json" "./src/uml-sprinkler*" "README.md")
+files=( "./src/uml-sprinkler*" "README.md")
 
 # Create the dist directory if it doesn't exist
 mkdir -p dist
@@ -10,5 +10,8 @@ mkdir -p dist
 
 # print the example of cp command looks like in the above scenario
 cp ${files[@]} dist/ && echo "Files copied successfully" || echo "Files not copied successfully" 
+
+cp package-build.json dist/package.json && echo "Files copied successfully" || echo "Files not copied successfully" 
+
 
 exit 0

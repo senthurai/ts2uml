@@ -35,8 +35,10 @@ let l1=new MyClass();
 l1.myMethod();
 
 // End of the sequence
+console.log(getSequence());
+console.log(getSequenceTemplate());
+console.log(getFlowDiagram());
 
-getSequence("R12");
 
 /**
 * getSequence returns the text uml

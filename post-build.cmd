@@ -1,7 +1,7 @@
 @echo off
 
 REM Array of files to copy
-set files=package-bundle.json ./uml-sprinkler* README.md
+set files=./uml-sprinkler* README.md
 
 REM Create the dist directory if it doesn't exist
 if not exist dist mkdir dist
@@ -14,5 +14,8 @@ for %%f in (%files%) do (
         echo File %%f not copied successfully in Windows
     )
 )
+  
+copy  "./package-bundle.json" "./dist/package.json" && echo File copied successfully || echo File not copied in windows
+
 
 exit /b 0
