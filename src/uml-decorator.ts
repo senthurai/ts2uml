@@ -65,25 +65,26 @@ function _applyGraph(this: any, originalMethod: any, args: any[]) {
   }
   const requestId = _graphs._getRequestId();
   const pop = _graphs.classStack.pop() || { className: "Root", method: undefined };
+  const startTime = new Date();
   if (requestId) {
     const nodesById = _graphs.graphs[requestId] || [];
     _graphs.classStack.push(pop);
     if (pop || pop.className !== className) {
       _graphs.classStack.push({ className, method: originalMethod.name });
     }
-    const newNode = new GraphNode(pop.className, pop.method, className, originalMethod.name, args && Object.keys(args).length ? JSON.stringify(args) : "", new Date().getTime(), NodeType.Request);
+    const newNode = new GraphNode(pop.className, pop.method, className, originalMethod.name, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request);
     nodesById.push(newNode);
     _graphs.graphs[requestId] = nodesById;
   }
   try {
     const result = originalMethod.call(this, ...args);
     if (requestId) {
-      handleResponse(result, pop, className, originalMethod.name);
+      handleResponse(result, pop, className, originalMethod.name, startTime);
     }
     return result;
   } catch (e) {
     if (requestId) {
-      handleResponse(e, pop, className, originalMethod.name);
+      handleResponse(e, pop, className, originalMethod.name, startTime);
       _getSequence();
       setSequenceId(requestId)
     }
@@ -91,18 +92,18 @@ function _applyGraph(this: any, originalMethod: any, args: any[]) {
   }
 }
 
-function handleResponse(result: any, pop: { className: string, method: string }, className: string, method: string) {
+function handleResponse(result: any, pop: { className: string, method: string }, className: string, method: string, startTime: Date) {
   const nodes = _graphs.graphs[_graphs._getRequestId()] || [];
   _graphs.classStack.pop()
   if (result instanceof Promise) {
     result.then((res: any) => {
-      const newNode = new GraphNode(className, pop.method, pop.className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime(), NodeType.ResponseAsync);
+      const newNode = new GraphNode(className, pop.method, pop.className, method, res && Object.keys(res).length ? JSON.stringify(res) : "",  new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync);
       nodes.push(newNode);
       return res;
     })
   }
 
-  const newNode = new GraphNode(className, pop.method, pop.className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime(), result instanceof Promise ? NodeType.AsyncReturn : NodeType.Response);
+  const newNode = new GraphNode(className, pop.method, pop.className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), result instanceof Promise ? NodeType.AsyncReturn : NodeType.Response);
   nodes.push(newNode);
   _graphs.graphs[_graphs._getRequestId()] = nodes;
 
@@ -110,6 +111,6 @@ function handleResponse(result: any, pop: { className: string, method: string },
 
 export const getSequence = _getSequence
 export const getFlowDiagram = _getFlowDiagram;
-export const getSequenceTemplate = _getSequenceTemplate; 
+export const getSequenceTemplate = _getSequenceTemplate;
 
 

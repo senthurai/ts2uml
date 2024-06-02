@@ -40,7 +40,7 @@ export function _getSequenceTemplate(): string {
 function getSequenceFromNode(nodes: GraphNode[]) {
   let sequence = "";
   const participants: string[] = [];
-  nodes.sort((a, b) => a.timestamp == b.timestamp ? 0 : a.timestamp > b.timestamp ? 1 : -1).forEach((node) => {
+  nodes.forEach((node) => {
     const actorSrc = fntoReadable(expand(node.source));
     const actorDest = fntoReadable(expand(node.reciever));
     if (!participants.includes(node.source)) {
@@ -74,8 +74,9 @@ function getSequenceTemplateFromNode(nodes: GraphNode[]) {
       sequence += "\nParticipant " + node.reciever + " as " + actorDest
       participants.push(node.reciever);
     }
-    let seq = `\n${node.source} ${getSequenceDirection(node)} ${node.reciever}: ${fntoReadable(expand(node.method))}`;
-    sequenceArray.includes(seq) || sequenceArray.push(seq);
+    let seq = parseSequence(node);
+
+    calculateMean(sequenceArray, seq, nodes, node);
   });
 
   sequence += sequenceArray.join("");
@@ -84,6 +85,35 @@ function getSequenceTemplateFromNode(nodes: GraphNode[]) {
 }
 
 
+
+function calculateMean(sequenceArray: string[], seq: string, nodes: GraphNode[], node: GraphNode) {
+  if (!sequenceArray.includes(seq)) {
+    sequenceArray.push(seq);
+    let min = 0;
+    let max = 0;
+    let mean = 0;
+    let count = 0;
+    let total = 0;
+    nodes.filter(n => parseSequence(n) == seq).forEach(n => {
+      if (node.type !== NodeType.Request) {
+        if (min == 0 || n.timestamp < min) {
+          min = n.timestamp;
+        }
+        if (max == 0 || n.timestamp > max) {
+          max = n.timestamp;
+        }
+        total += n.timestamp;
+        count++;
+      }
+    });
+    mean = total / count;
+    node.type === NodeType.Request || sequenceArray.push(`\nNote left of ${node.source}:c:${count}|m:${min}/M:${max}/~${mean.toPrecision(3)}/ms`);
+  }
+}
+
+function parseSequence(node: GraphNode) {
+  return `\n${node.source} ${getSequenceDirection(node)} ${node.reciever}: ${fntoReadable(expand(node.method))}`;
+}
 
 function getSequenceDirection(node: GraphNode) {
   switch (node.type) {

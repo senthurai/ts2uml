@@ -12,7 +12,7 @@ export class GraphNode {
   readonly method: string;
   readonly reciever: string;
   readonly srcMethod: string;
-  constructor(source: string, srcMethod: string, reciever: string, method: string, public readonly args: string, public timestamp: number, public type: NodeType) {
+  constructor(source: string, srcMethod: string, reciever: string, method: string, public readonly args: string, public timestamp: number , public type: NodeType) {
     this.source = abbreviate(source);
     this.method = abbreviate(method);
     this.srcMethod = abbreviate(srcMethod);
