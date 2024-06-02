@@ -14,22 +14,28 @@ function readTheFiles(input: string) {
             readTheFiles(filePath);
         } else if (filePath.endsWith('.ts')) {
             let fileContent: string = readTheContent(filePath);
-            // add "@uml()" to the all class in the fileContent if it is not already there
+            let modified = false;
+            
+            // Add "@uml()" decorator to all classes if not already present
             let classPattern = /(public|export)? ?(public|export)*class\s+(\w+)\s*\{/g;
-            let classMatch, modified;
+            let classMatch;
             while (classMatch = classPattern.exec(fileContent)) {
                 let className = classMatch[3];
                 let umlPattern = new RegExp(`@uml\\(\\)\\s*(public|export)? ?(public|export)?class\\s+${className}\\s*\\{`, 'gim');
                 if (!umlPattern.test(fileContent)) {
-                    console.log(umlPattern);
-                    fileContent = fileContent.replace(classMatch[0], `\n@uml()\n${classMatch[0]}`);
-                    const import_stmt = "import { uml } from 'ts2uml';";
-                    if (!fileContent.includes(import_stmt)) {
-                        fileContent = `\nimport { uml } from 'ts2uml';\n${fileContent}`;
-                    }
-                    modified = true;
+                    console.log(`Adding @uml() decorator to class ${className}`)
+                    fileContent =  (modified = true) && fileContent.replace(classMatch[0], `\n@uml()\n${classMatch[0]}`);
+                   
                 }
             }
+            
+            // Add import statement if not already present
+            const import_stmt = "import { uml } from 'ts2uml';";
+            if (!fileContent.includes(import_stmt)) {
+                fileContent = (modified = true) && `\n${import_stmt}\n${fileContent}`;
+            }
+            
+            // Write modified content back to file if any modifications were made
             if (modified) {
                 fs.writeFileSync(filePath, fileContent);
             }

@@ -1,6 +1,6 @@
 
-import { _getSequence } from "./graph-node-parser";
-import { GraphNode, _graphs } from "./model";
+import { _getSequence } from "./sequence-diagram";
+import { GraphNode, NodeType, _graphs } from "./model";
 const defaultFn = ["constructor", "__defineGetter__", "__defineSetter__", "hasOwnProperty", "__lookupGetter__", "__lookupSetter__", "isPrototypeOf", "propertyIsEnumerable", "toString", "valueOf", "__proto__", "toLocaleString"]
 /**
  * This decorator function modifies the original method to apply a graph sequence.
@@ -10,9 +10,7 @@ const defaultFn = ["constructor", "__defineGetter__", "__defineSetter__", "hasOw
  * @returns {Function} - A function that replaces the original method.
  */
 export function uml(): Function {
-
   return function (method: any, caller: any, d: PropertyDescriptor) {
-
     if ((caller && caller?.kind === "class") || (method?.prototype && method?.prototype?.constructor?.name === method?.name)) {
       return handleClass(d, method);
     } else {
@@ -20,6 +18,7 @@ export function uml(): Function {
     }
   };
 }
+
 function getAllMethodNames(obj: any) {
   let methods = new Set();
   while (obj = Reflect.getPrototypeOf(obj)) {
@@ -42,25 +41,15 @@ function handleClass(d: PropertyDescriptor, _class: any) {
       });
     }
   };
-
 }
-
 
 function handleFn(d: PropertyDescriptor, method: any) {
   const originalMethod: any = (d && d.value) || method;
-
   const overidden = function (this: any, ...args: any[]) {
-
-
     const result = _applyGraph.call(this, originalMethod, args);
     return result;
-
   };
-  if (d) {
-    d.value = overidden;
-  } else {
-    return overidden;
-  }
+  return d && (d.value = overidden) || overidden;
 }
 
 export function setSequenceId(requestId: string) {
@@ -74,25 +63,26 @@ function _applyGraph(this: any, originalMethod: any, args: any[]) {
     className = Object.getPrototypeOf(this.constructor).name;
   }
   const requestId = _graphs._getRequestId();
-  let oldNode = _graphs.graphs[requestId];
+  const pop = _graphs.classStack.pop() || { className: "Root", method: undefined };
   if (requestId) {
-    if (!oldNode) {
-      oldNode = new GraphNode(requestId, "", args.length ? JSON.stringify(args) : "", undefined, new Date().toISOString(), undefined);
-      _graphs.graphs[requestId] = oldNode;
+    const nodesById = _graphs.graphs[requestId] || [];
+    _graphs.classStack.push(pop);
+    if (pop || pop.className !== className) {
+      _graphs.classStack.push({ className, method: originalMethod.name });
     }
-    const newNode = new GraphNode(className, originalMethod.name, args.length ? JSON.stringify(args) : "", "", new Date().toISOString(), oldNode);
-    oldNode!.children.push(newNode);
-    _graphs.graphs[requestId] = newNode;
+    const newNode = new GraphNode(pop.className, pop.method, className, originalMethod.name, args && Object.keys(args).length ? JSON.stringify(args) : "", new Date().getTime(), NodeType.Request);
+    nodesById.push(newNode);
+    _graphs.graphs[requestId] = nodesById;
   }
   try {
     const result = originalMethod.call(this, ...args);
-    requestId && (_graphs.graphs[requestId] = oldNode) && result && (oldNode.response = JSON.stringify(result));
-
+    if (requestId) {
+      handleResponse(result, pop, className, originalMethod.name);
+    }
     return result;
   } catch (e) {
     if (requestId) {
-      _graphs.graphs[requestId] = oldNode;
-      oldNode.response = JSON.stringify(e.message);
+      handleResponse(e, pop, className, originalMethod.name);
       _getSequence();
       setSequenceId(requestId)
     }
@@ -100,4 +90,23 @@ function _applyGraph(this: any, originalMethod: any, args: any[]) {
   }
 }
 
+function handleResponse(result: any, pop: { className: string, method: string }, className: string, method: string) {
+  const nodes = _graphs.graphs[_graphs._getRequestId()] || [];
+  _graphs.classStack.pop()
+  if (result instanceof Promise) {
+    result.then((res: any) => {
+      const newNode = new GraphNode(className, pop.method, pop.className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime(), NodeType.ResponseAsync);
+      nodes.push(newNode);
+      return res;
+    })
+  }
+
+  const newNode = new GraphNode(className, pop.method, pop.className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime(), result instanceof Promise ? NodeType.AsyncReturn : NodeType.Response);
+  nodes.push(newNode);
+  _graphs.graphs[_graphs._getRequestId()] = nodes;
+
+}
+
 export const getSequence = _getSequence
+
+

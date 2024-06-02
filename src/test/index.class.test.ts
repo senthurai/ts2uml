@@ -1,10 +1,8 @@
  
-
-import { uml } from 'ts2uml';
-// Create a decorator function to apply annotations
+ // Create a decorator function to apply annotations
 
 import { _graphs } from "../model";
-import { getSequence, setSequenceId } from "../uml";
+import { uml,getSequence, setSequenceId } from "../uml-decorator";
 
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 

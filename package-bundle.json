@@ -1,6 +1,6 @@
 {
   "name": "ts2uml",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "typescript workflow to uml sequence",
   "main": "index.js",
   "types": "index.d.ts",
@@ -15,7 +15,6 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.12.12",
-    "terser": "^5.31.0",
-    "ts2uml": "^0.0.19"
+    "terser": "^5.31.0"
   }
 }

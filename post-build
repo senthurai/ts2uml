@@ -1,0 +1,14 @@
+#!/bin/bash 
+# Array of files to copy
+files=("package-bundle.json" "./src/uml-sprinkler*" "README.md")
+
+# Create the dist directory if it doesn't exist
+mkdir -p dist
+
+
+# copy the files using single cp command without using loop for cp command
+
+# print the example of cp command looks like in the above scenario
+cp ${files[@]} dist/ && echo "Files copied successfully" || echo "Files not copied successfully" 
+
+exit 0
