@@ -12,7 +12,7 @@ export class GraphNode {
   readonly method: string;
   readonly reciever: string;
   readonly srcMethod: string;
-  constructor(source: string, srcMethod: string, reciever: string, method: string, public readonly args: string, public timestamp: number , public type: NodeType) {
+  constructor(source: string, srcMethod: string, reciever: string, method: string, public readonly args: string, public timestamp: number, public type: NodeType) {
     this.source = abbreviate(source);
     this.method = abbreviate(method);
     this.srcMethod = abbreviate(srcMethod);
@@ -48,8 +48,17 @@ class SequenceGraph {
   _setRequestId(requestId: any) {
     this.requestId = requestId;
   }
+  //reset
+  _reset() {
+    this.graphs = {};
+    this.classStack = [];
+    this.requestId = "";
+    this.dedups = [];
+  }
+
   graphs: { [key: string]: GraphNode[] } = {};
   classStack: { className: string, method: string }[] = [];
 }
+
 
 export const _graphs: SequenceGraph = new SequenceGraph();

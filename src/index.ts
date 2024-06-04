@@ -1,3 +1,4 @@
-import { setSequenceId, uml, getSequence } from "./uml-decorator";
+import { clear, getFlowDiagram, getSequence, getSequenceTemplate, setTraceId, uml } from "./uml-decorator";
 
-export { setSequenceId, uml , getSequence };
+export { clear, getFlowDiagram, getSequence, getSequenceTemplate, setTraceId, uml };
+

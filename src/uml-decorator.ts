@@ -53,7 +53,7 @@ function handleFn(d: PropertyDescriptor, method: any) {
   return d && (d.value = overidden) || overidden;
 }
 
-export function setSequenceId(requestId: string) {
+export function setTraceId(requestId: string) {
   _graphs._setRequestId(requestId);
 }
 
@@ -86,7 +86,7 @@ function _applyGraph(this: any, originalMethod: any, args: any[]) {
     if (requestId) {
       handleResponse(e, pop, className, originalMethod.name, startTime);
       _getSequence();
-      setSequenceId(requestId)
+      setTraceId(requestId)
     }
     throw e;
   }
@@ -97,7 +97,7 @@ function handleResponse(result: any, pop: { className: string, method: string },
   _graphs.classStack.pop()
   if (result instanceof Promise) {
     result.then((res: any) => {
-      const newNode = new GraphNode(className, pop.method, pop.className, method, res && Object.keys(res).length ? JSON.stringify(res) : "",  new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync);
+      const newNode = new GraphNode(className, pop.method, pop.className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync);
       nodes.push(newNode);
       return res;
     })
@@ -109,8 +109,13 @@ function handleResponse(result: any, pop: { className: string, method: string },
 
 }
 
+function _clear() {
+  _graphs._reset();
+}
+
 export const getSequence = _getSequence
 export const getFlowDiagram = _getFlowDiagram;
 export const getSequenceTemplate = _getSequenceTemplate;
+export const clear = _clear;
 
 

@@ -1,5 +1,7 @@
-import fs from "fs";
+import fs, { createWriteStream } from "fs";
 import { GraphNode, NodeType, _graphs, expand, fntoReadable } from "./model";
+import { createHash } from "crypto";
+const rootTs2uml = "./.ts2uml/";
 /**
  * This function generates a sequence diagram. 
  * The function finds the GraphNode associated with the requestId and traverses up the graph to the root node.
@@ -7,39 +9,37 @@ import { GraphNode, NodeType, _graphs, expand, fntoReadable } from "./model";
  *
  * @returns {string} - A string representing the sequence diagram.
  */
-
 export function _getSequence(): string {
-  const newLocal = Object.keys(_graphs.graphs)
+  const sequence = Object.keys(_graphs.graphs)
     .map((key) => {
-      let node: GraphNode[] = _graphs.graphs[key];
-      let seq = getSequenceFromNode(node);
-      const root = "./.ts2uml/";
-      fs.existsSync(root) || fs.mkdirSync("./.ts2uml/", { recursive: true });
-      const sequence = "```mermaid\nsequenceDiagram\n" + seq + "\n```";
-      fs.writeFileSync(root + "sd_" + key + ".md", sequence);
+      const fileToWrite = rootTs2uml + "sd_" + key + ".md";
+      let nodeArray: GraphNode[] = _graphs.graphs[key];
+      const dedups: string[] = [], participants: string[] = [];
+      fs.existsSync(rootTs2uml) || fs.mkdirSync(rootTs2uml, { recursive: true });
+      fs.existsSync(fileToWrite) && fs.unlinkSync(fileToWrite)
+      const writeStream = createWriteStream(fileToWrite);
+      const beginning = "```mermaid\nsequenceDiagram\n";
+      let sequence = beginning;
+      const chunkSize = 1000;
+      writeStream.write(beginning);
+      chunk(nodeArray, chunkSize).forEach((nodes) => {
+        let seq = getSequenceFromNode(nodes, dedups, participants) + "\n";
+        sequence += seq;
+        writeStream.write(seq);
+      })
+      writeStream.write("```");
+      writeStream.end()
+      writeStream.close();
       return sequence;
     }).join("\n");
-  return newLocal;
-}
-
-export function _getSequenceTemplate(): string {
-  const newLocal = Object.keys(_graphs.graphs)
-    .map((key) => {
-      let node: GraphNode[] = _graphs.graphs[key];
-      let seq = getSequenceTemplateFromNode(node);
-      const root = "./.ts2uml/";
-      fs.existsSync(root) || fs.mkdirSync("./.ts2uml/", { recursive: true });
-      const sequence = "```mermaid\nsequenceDiagram\n" + seq + "\n```";
-      fs.writeFileSync(root + "sdt_" + key + ".md", sequence);
-      return sequence;
-    }).join("\n");
-  return newLocal;
+  return sequence;
 }
 
 
-function getSequenceFromNode(nodes: GraphNode[]) {
+
+function getSequenceFromNode(nodes: GraphNode[], dedups: string[], participants: string[]) {
   let sequence = "";
-  const participants: string[] = [];
+  let isDtimeSet = false;
   nodes.forEach((node) => {
     const actorSrc = fntoReadable(expand(node.source));
     const actorDest = fntoReadable(expand(node.reciever));
@@ -52,17 +52,70 @@ function getSequenceFromNode(nodes: GraphNode[]) {
       participants.push(node.reciever);
     }
     sequence += `\n${node.source} ${getSequenceDirection(node)} ${node.reciever}: ${fntoReadable(expand(node.method))}`;
-    _graphs.dedups.includes(node.timestamp + "") || (sequence += `\nNote left of ${node.source}:${node.timestamp}`) && _graphs.dedups.push(node.timestamp + "");
+    if (!dedups.includes(node.timestamp + "")) {
+      let result = getTimeStamp(node, isDtimeSet);
+      result && (sequence += `\nNote left of ${node.source}:${result}`)
+      isDtimeSet = true;
+      dedups.push(node.timestamp + "");
+    }
     node.args && (sequence += `\nNote over ${node.source},${node.reciever}:` + node.args)
   });
   return sequence;
 }
 
+function getTimeStamp(node: GraphNode, isTimeSet: boolean) {
+  let result = undefined;
+  if (node.type === NodeType.Request) {
+    if (isTimeSet) {
+      // result is just the time
+      result = new Date(node.timestamp).toString().split(" ")[4];
+    } else {
+      result = new Date(node.timestamp).toString();
+    }
+  }
+  else {
+    result = node.timestamp + "ms";
+  }
+  return result;
+}
+
+export function _getSequenceTemplate(): string {
+  fs.existsSync(rootTs2uml) || fs.mkdirSync(rootTs2uml, { recursive: true });
+  const sequences = Object.keys(_graphs.graphs).map((key) => {
+    let nodeArray: GraphNode[] = _graphs.graphs[key];
+    const participants: string[] = [];
+    const sequenceArray: string[] = [];
+    const begining = "```mermaid\nsequenceDiagram\n";
+    let sequence = begining;
+    const fileToWrite = rootTs2uml + "sdt_" + key + ".md";
+    //delete the file if it exists
+    fs.existsSync(fileToWrite) && fs.unlinkSync(fileToWrite)
+    const writeStream = createWriteStream(fileToWrite);
+    writeStream.write(begining);
+    chunk(nodeArray, 20).forEach((nodes) => {
+      let seq = getSequenceTemplateFromNode(nodes, sequenceArray, participants) + "\n";
+      sequence += seq;
+    })
+    chunk(sequenceArray, 20).forEach((seq) => {
+      const write = seq.join("");
+      writeStream.write(write);
+      sequence += write;
+    })
+    writeStream.write("\n```");
+    writeStream.end();
+    return sequence;
+  }).join("\n");
+  return sequences;
+}
+
+// write chunk implementation
+function chunk(array: any[], size: number): any[] {
+  return array.reduce((acc, _, i) => (i % size ? acc : [...acc, array.slice(i, i + size)]), []);
+}
+
 // getSequenceFromNode with no duplicate sequence
-function getSequenceTemplateFromNode(nodes: GraphNode[]) {
+function getSequenceTemplateFromNode(nodes: GraphNode[], sequenceArray: string[], participants: string[]) {
   let sequence = "";
-  const participants: string[] = [];
-  const sequenceArray: string[] = [];
   nodes.forEach((node) => {
     const actorSrc = fntoReadable(expand(node.source));
     const actorDest = fntoReadable(expand(node.reciever));
@@ -75,39 +128,44 @@ function getSequenceTemplateFromNode(nodes: GraphNode[]) {
       participants.push(node.reciever);
     }
     let seq = parseSequence(node);
-
-    calculateMean(sequenceArray, seq, nodes, node);
+    calculateMean(participants, sequenceArray, seq, node);
   });
-
-  sequence += sequenceArray.join("");
 
   return sequence;
 }
 
+function calculateMean(participants: string[], sequenceArray: string[], seq: string, node: GraphNode) {
+  //get hash the of seq
 
-
-function calculateMean(sequenceArray: string[], seq: string, nodes: GraphNode[], node: GraphNode) {
+  let isOld: boolean = true;
   if (!sequenceArray.includes(seq)) {
     sequenceArray.push(seq);
-    let min = 0;
-    let max = 0;
-    let mean = 0;
-    let count = 0;
-    let total = 0;
-    nodes.filter(n => parseSequence(n) == seq).forEach(n => {
-      if (node.type !== NodeType.Request) {
-        if (min == 0 || n.timestamp < min) {
-          min = n.timestamp;
-        }
-        if (max == 0 || n.timestamp > max) {
-          max = n.timestamp;
-        }
-        total += n.timestamp;
-        count++;
-      }
-    });
-    mean = total / count;
-    node.type === NodeType.Request || sequenceArray.push(`\nNote left of ${node.source}:c:${count}|m:${min}/M:${max}/~${mean.toPrecision(3)}/ms`);
+    isOld = false;
+  }
+  if (node.type !== NodeType.Request) {
+    let hash = createHash('sha256').update(seq).digest('hex');
+    const meanValue = participants[hash] || (participants[hash] = {});
+    const indexToDelete = sequenceArray.indexOf(seq) + 1;
+    let min = meanValue.min || 0;
+    let max = meanValue.max || 0;
+    let count = meanValue.count || 0;
+    let total = meanValue.total || 0;
+    if (min == 0 || node.timestamp < min) {
+      min = node.timestamp;
+    }
+    if (max == 0 || node.timestamp > max) {
+      max = node.timestamp;
+    }
+    total += node.timestamp;
+    count++;
+    meanValue.min = min;
+    meanValue.max = max;
+    meanValue.total = total;
+    meanValue.count = count;
+    meanValue.mean = total / count;
+    participants[hash] = meanValue;
+    const index = isOld && indexToDelete || sequenceArray.length;
+    sequenceArray[index] = (`\nNote left of ${node.source}:c:${count}|m:${min}/M:${max}/~${meanValue.mean.toPrecision(3)}/ms`);
   }
 }
 

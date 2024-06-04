@@ -1,7 +1,7 @@
 
 
 // Create a decorator function to apply annotations  
-import { getFlowDiagram, getSequence, getSequenceTemplate, setSequenceId, uml } from "../uml-decorator";
+import { getFlowDiagram, getSequence, getSequenceTemplate, setTraceId, uml } from "../uml-decorator";
 
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 //
@@ -49,7 +49,7 @@ class MyClass2 {
   }
 }
 const l: Promise<any>[] = []
-setSequenceId("R12");
+setTraceId("R12");
 [1].forEach(async (x) => {
   console.log("1.Hello world");
   let l1: MyClass = new MyClass();

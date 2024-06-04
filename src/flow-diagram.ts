@@ -12,11 +12,8 @@ export function _getFlowDiagram(): string {
             fs.writeFileSync(root + "flowchart_" + key + ".md", flow);
             return flow;
         }).join("\n");
-
     return flow;
 }
-
-
 
 /** generate
  * flowchart TD
@@ -25,16 +22,12 @@ export function _getFlowDiagram(): string {
     C -->|One| D[Laptop]
     C -->|Two| E[iPhone]
     C -->|Three| F[fa:fa-car Car]
- 
- 
  */
 
 function getFlowFromNode(nodes: GraphNode[]) {
     let flow = "";
     const participants: {} = {};
-
     nodes.filter(n => n.type == NodeType.Request).forEach((node) => {
-
         if (!participants[node.source]) {
             participants[node.source] = {};
         }
@@ -57,5 +50,3 @@ function getFlowFromNode(nodes: GraphNode[]) {
     });
     return flow;
 }
-
-

@@ -1,6 +1,6 @@
 {
   "name": "ts2uml",
-  "version": "0.0.26",
+  "version": "0.0.28",
   "description": "typescript workflow to uml sequence",
   "main": "index.js",
   "types": "index.d.ts",
