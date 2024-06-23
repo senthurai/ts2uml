@@ -11,6 +11,7 @@ const defaultFn = ["constructor", "__defineGetter__", "__defineSetter__", "hasOw
  * @returns {Function} - A function that replaces the original method.
  */
 export function uml(): Function {
+
   return function (method: any, caller: any, d: PropertyDescriptor) {
     if ((caller && caller?.kind === "class") || (method?.prototype && method?.prototype?.constructor?.name === method?.name)) {
       return handleClass(d, method);
@@ -31,13 +32,14 @@ function getAllMethodNames(obj: any) {
 
 
 function handleClass(d: PropertyDescriptor, _class: any) {
-
-  return class _sequenceTempImpl extends _class {
+  let classes: any = {};
+  return class extends _class {
     constructor(...args: any[]) {
       super(...args);
       this.name = _class.name;
       const orgImpl = this;
-      getAllMethodNames(this).forEach((key: PropertyKey) => {
+      const methods = getAllMethodNames(this);
+      methods.forEach((key: PropertyKey) => {
         orgImpl[key.toString()] = handleFn(undefined, orgImpl[key.toString()]);
       });
     }
@@ -46,67 +48,60 @@ function handleClass(d: PropertyDescriptor, _class: any) {
 
 function handleFn(d: PropertyDescriptor, method: any) {
   const originalMethod: any = (d && d.value) || method;
-  const overidden = function (this: any, ...args: any[]) {
-    const result = _applyGraph.call(this, originalMethod, args);
+  d = d || { value: method }
+  return d.value = function (this: any, ...args: any[]) {
+    this.name = method.name;
+    let error: Error = new Error();
+    const result = _applyGraph.call(this, originalMethod, args, error);
     return result;
   };
-  return d && (d.value = overidden) || overidden;
 }
 
 export function setTraceId(requestId: string) {
   _graphs._setRequestId(requestId);
 }
 
-function _applyGraph(this: any, originalMethod: any, args: any[]) {
-  // get the original method's class name
-  let className = this.constructor.name;
-  if (className === "_sequenceTempImpl") {
-    className = Object.getPrototypeOf(this.constructor).name;
-  }
+function _applyGraph(this: any, originalMethod: any, args: any[], error: Error) {
+  let stack = getStackMethod(error);
+  const current = stack[0];
+  const previous = stack[1];
   const requestId = _graphs._getRequestId();
-  const pop = _graphs.classStack.pop() || { className: "Root", method: undefined };
   const startTime = new Date();
   if (requestId) {
     const nodesById = _graphs.graphs[requestId] || [];
-    _graphs.classStack.push(pop);
-    if (pop || pop.className !== className) {
-      _graphs.classStack.push({ className, method: originalMethod.name });
-    }
-    const newNode = new GraphNode(pop.className, pop.method, className, originalMethod.name, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request);
+    const newNode = new GraphNode(previous.className, previous.method, current.className, current.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request);
     nodesById.push(newNode);
     _graphs.graphs[requestId] = nodesById;
   }
   try {
     const result = originalMethod.call(this, ...args);
     if (requestId) {
-      handleResponse(result, pop, className, originalMethod.name, startTime);
+      handleResponse(result, previous.className, previous.method, current.className, current.method, startTime);
     }
     return result;
   } catch (e) {
     if (requestId) {
-      handleResponse(e, pop, className, originalMethod.name, startTime);
+      handleResponse(e, previous.className, previous.method, current.className, current.method, startTime);
       _getSequence();
-      setTraceId(requestId)
+
     }
     throw e;
   }
 }
 
-function handleResponse(result: any, pop: { className: string, method: string }, className: string, method: string, startTime: Date) {
+function handleResponse(result: any, prevClassName: string, prevMethod: string, className: string, method: string, startTime: Date) {
   const nodes = _graphs.graphs[_graphs._getRequestId()] || [];
-  _graphs.classStack.pop()
+
   if (result instanceof Promise) {
     result.then((res: any) => {
-      const newNode = new GraphNode(className, pop.method, pop.className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync);
+      const newNode = new GraphNode(className, prevMethod, prevClassName, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync);
       nodes.push(newNode);
       return res;
     })
   }
-
-  const newNode = new GraphNode(className, pop.method, pop.className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), result instanceof Promise ? NodeType.AsyncReturn : NodeType.Response);
+  const newNode = new GraphNode(className, prevMethod, prevClassName, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), result instanceof Promise ? NodeType.AsyncReturn : NodeType.Response);
   nodes.push(newNode);
   _graphs.graphs[_graphs._getRequestId()] = nodes;
-
 }
 
 function _clear() {
@@ -118,4 +113,30 @@ export const getFlowDiagram = _getFlowDiagram;
 export const getSequenceTemplate = _getSequenceTemplate;
 export const clear = _clear;
 
+
+function getStackMethod(error: Error): { className: string, method: string }[] {
+  let stack: { className: string, method: string }[] = [{ className: "Root", method: "" }, { className: "Root", method: "" }];
+  let i = 0;
+  error.stack.split("\n").slice(1, 3).forEach((line) => {
+    stack[i++] = processStackLine(line);
+  })
+  return stack;
+}
+
+function processStackLine(line: string) {
+  if (line.includes("at ")) {
+    if (line.includes("Object.<anonymous>")) {
+      return { className: "Root", method: "" }
+    }
+    const parts = line.split("at ")[1].split(" ");
+    if (parts.length > 1) {
+      const classMethod = parts[0].split(".");
+      let method = classMethod[1]
+      if (line.includes("as ")) {
+        method = line.replace(/.*\[as (.*?)\].*/, "$1");
+      }
+      return { className: classMethod[0], method: method }
+    }
+  }
+}
 

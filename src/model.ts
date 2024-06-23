@@ -20,16 +20,17 @@ export class GraphNode {
   }
 }
 function abbreviate(name: string) {
-  if (!name || _graphs.dedups[name]) return _graphs.dedups[name]
+  const newName = name.replace(/[_$]/g, "");
+  if (!newName || _graphs.dedups[newName]) return _graphs.dedups[newName]
   let i = 1;
-  let a = name.replace(/([A-Z])[a-z]*/g, "$1");
+  let a = newName.replace(/.*?([A-Z])[a-z_]*/g, "$1");
   while (_graphs.dedups.includes(a)) {
-    a = name.replace(/([A-Z])[a-z]*/g, "$1") + i++;
+    a = newName.replace(/.*?([A-Z])[a-z_]*/g, "$1") + i++;
   }
   _graphs.dedups.push(a);
-  _graphs.dedups[name] = a;
-  _graphs.dedups[a] = name;
-  _graphs.dedups.push(name);
+  _graphs.dedups[newName] = a;
+  _graphs.dedups[a] = newName;
+  _graphs.dedups.push(newName);
   return a
 }
 export function fntoReadable(params: string) {
