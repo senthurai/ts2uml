@@ -96,8 +96,8 @@ export function _getSequenceTemplate(): string {
       let seq = getSequenceTemplateFromNode(nodes, sequenceArray, participants) + "\n";
       sequence += seq;
     })
-    chunk(sequenceArray, 20).forEach((seq) => {
-      const write = seq.join("");
+    chunk(sequenceArray, 20).forEach((seqArray) => {
+      const write = seqArray.join("");
       writeStream.write(write);
       sequence += write;
     })
@@ -120,18 +120,27 @@ function getSequenceTemplateFromNode(nodes: GraphNode[], sequenceArray: string[]
     const actorSrc = fntoReadable(expand(node.source));
     const actorDest = fntoReadable(expand(node.reciever));
     if (!participants.includes(node.source)) {
-      sequence += "\nParticipant " + node.source + " as " + actorSrc
-      participants.push(node.source);
+      sequence = handleParticipant(node.source, actorSrc, sequence, sequenceArray, participants);
     }
-    if (!participants.includes(node.reciever)) {
-      sequence += "\nParticipant " + node.reciever + " as " + actorDest
-      participants.push(node.reciever);
+    if (!participants.includes(node.reciever)) { 
+      sequence = handleParticipant(node.reciever, actorDest, sequence, sequenceArray, participants);
     }
     let seq = parseSequence(node);
     calculateMean(participants, sequenceArray, seq, node);
   });
 
   return sequence;
+}
+
+function handleParticipant(actorAbbr: string, actor: string, sequence: string, sequenceArray: string[], participants: string[]) {
+  const participant = addParticipant(actorAbbr, actor);
+   sequenceArray.push(participant);
+  participants.push(actorAbbr);
+  return sequence;
+}
+
+function addParticipant(actorAbbr: string, actor: string) {
+  return "\nParticipant " + actorAbbr + " as " + actor;
 }
 
 function calculateMean(participants: string[], sequenceArray: string[], seq: string, node: GraphNode) {

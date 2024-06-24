@@ -2,7 +2,7 @@
 import { _getSequence, _getSequenceTemplate } from './sequence-diagram';
 import { GraphNode, NodeType, _graphs } from "./model";
 import { _getFlowDiagram } from "./flow-diagram";
-const defaultFn = ["constructor", "__defineGetter__", "__defineSetter__", "hasOwnProperty", "__lookupGetter__", "__lookupSetter__", "isPrototypeOf", "propertyIsEnumerable", "toString", "valueOf", "__proto__", "toLocaleString"]
+const defaultFn = ["constructor", "length", "name", "prototype", "__defineGetter__", "__defineSetter__", "hasOwnProperty", "__lookupGetter__", "__lookupSetter__", "isPrototypeOf", "propertyIsEnumerable", "toString", "valueOf", "__proto__", "toLocaleString"]
 /**
  * This decorator function modifies the original method to apply a graph sequence.
  * The replacement method creates a new GraphNode if one does not already exist for the requestId,
@@ -12,11 +12,11 @@ const defaultFn = ["constructor", "__defineGetter__", "__defineSetter__", "hasOw
  */
 export function uml(): Function {
 
-  return function (method: any, caller: any, d: PropertyDescriptor) {
-    if ((caller && caller?.kind === "class") || (method?.prototype && method?.prototype?.constructor?.name === method?.name)) {
-      return handleClass(d, method);
+  return function (classMethod: any, caller: any, d: PropertyDescriptor) {
+    if ((caller && caller?.kind === "class") || (classMethod?.prototype && classMethod?.prototype?.constructor?.name === classMethod?.name)) {
+      return handleClass(d, classMethod);
     } else {
-      return handleFn(d, method);
+      return handleFn(d, classMethod);
     }
   };
 }
@@ -29,10 +29,25 @@ function getAllMethodNames(obj: any) {
   }
   return methods;
 }
-
+function isStaticMethod(_class: any, methodName: string | Symbol) {
+  return typeof methodName === 'string' && typeof _class[methodName] === 'function';
+}
 
 function handleClass(d: PropertyDescriptor, _class: any) {
-  let classes: any = {};
+  const classes = new Set();
+  let keys = Reflect.ownKeys(_class).filter(f => typeof f === 'string')
+  keys.filter(f => !defaultFn.includes(f.toString() + "") && isStaticMethod(_class, f)).forEach((k) => classes[k] = _class[k]);
+
+
+  const simpeTest = createClass(_class);
+  Object.keys(classes).forEach((key: PropertyKey) => {
+    simpeTest[key.toString()] = handleFn(undefined, simpeTest[key.toString()]);
+    _graphs.staticMethods[key.toString()]= _class.name;
+  });
+  return simpeTest;
+}
+function createClass(_class) {
+
   return class extends _class {
     constructor(...args: any[]) {
       super(...args);
@@ -45,18 +60,23 @@ function handleClass(d: PropertyDescriptor, _class: any) {
     }
   };
 }
+ 
 
 function handleFn(d: PropertyDescriptor, method: any) {
   const originalMethod: any = (d && d.value) || method;
   d = d || { value: method }
-  return d.value = function (this: any, ...args: any[]) {
-    this.name = method.name;
+ d.value = overrideFn(originalMethod);
+
+  return d.value;
+}
+
+function overrideFn(originalMethod: any) {
+ return function (this: any, ...args: any[]) {
     let error: Error = new Error();
     const result = _applyGraph.call(this, originalMethod, args, error);
     return result;
   };
 }
-
 export function setTraceId(requestId: string) {
   _graphs._setRequestId(requestId);
 }
@@ -132,10 +152,14 @@ function processStackLine(line: string) {
     if (parts.length > 1) {
       const classMethod = parts[0].split(".");
       let method = classMethod[1]
+      let className = classMethod[0];
       if (line.includes("as ")) {
         method = line.replace(/.*\[as (.*?)\].*/, "$1");
       }
-      return { className: classMethod[0], method: method }
+      if(className.includes("Function")){
+        className = _graphs.staticMethods[method];
+      }
+      return { className,  method }
     }
   }
 }

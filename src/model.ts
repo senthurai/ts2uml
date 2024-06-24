@@ -43,6 +43,7 @@ export function expand(short: string): string {
 class SequenceGraph {
   dedups: string[] = []
   requestId: string = "";
+  staticMethods: {}={};
   _getRequestId() {
     return this.requestId;
   }
