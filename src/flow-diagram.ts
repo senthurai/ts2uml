@@ -42,10 +42,13 @@ function getFlowFromNode(nodes: GraphNode[]) {
     });
     Object.keys(participants).filter(p => !p.includes("-")).forEach((p) => {
         flow += `\nsubgraph ${p}[${fntoReadable(expand(p))}]`
-        Object.keys(participants[p]).forEach((m) => {
+        const methods = Object.keys(participants[p]);
+        methods.forEach((m) => {
             if (m == 'undefined') return;
             flow += `\n${m}` + (m && `[${fntoReadable(expand(m))}]`);
         });
+        if(methods && methods.length>1)
+        flow += `\nclick ${ Object.keys(participants[p]).join(",")} href "${_graphs.remoteUrl[p]}" "${_graphs.remoteUrl[p]}"`
         flow += `\nend`
     });
     return flow;

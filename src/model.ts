@@ -39,11 +39,16 @@ export function fntoReadable(params: string) {
 export function expand(short: string): string {
   return _graphs.dedups[short] || short;
 }
+class UmlConfig {
+  remoteBaseUrl: string = "";
+  enableLink: boolean = true;
 
+}
 class SequenceGraph {
   dedups: string[] = []
   requestId: string = "";
-  staticMethods: {}={};
+  staticMethods: {} = {};
+  remoteUrl: {} = {};
   _getRequestId() {
     return this.requestId;
   }
@@ -64,3 +69,4 @@ class SequenceGraph {
 
 
 export const _graphs: SequenceGraph = new SequenceGraph();
+export const umlConfig: UmlConfig = new UmlConfig();
