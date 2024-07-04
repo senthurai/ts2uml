@@ -1,9 +1,7 @@
 
-import { _getSequence, _getSequenceTemplate } from './sequence-diagram';
-import { GraphNode, NodeType, _graphs } from "./model";
 import { _getFlowDiagram } from "./flow-diagram";
-import { readdirSync } from 'fs';
-import fs from 'fs';
+import { GraphNode, NodeType, _graphs } from "./model";
+import { _getSequence, _getSequenceTemplate } from './sequence-diagram';
 import { StackHandler } from './StackHandler';
 const defaultFn = ["constructor", "length", "name", "prototype", "__defineGetter__", "__defineSetter__", "hasOwnProperty", "__lookupGetter__", "__lookupSetter__", "isPrototypeOf", "propertyIsEnumerable", "toString", "valueOf", "__proto__", "toLocaleString"]
 /**
@@ -48,12 +46,13 @@ function handleClass(d: PropertyDescriptor, _class: any) {
   const simpeTest = createClass(_class);
   Object.keys(classes).forEach((key: PropertyKey) => {
     simpeTest[key.toString()] = handleFn(undefined, simpeTest[key.toString()]);
-    _graphs.staticMethods[key.toString()] = _class.name;
+    _graphs.methods[key.toString()] = _class.name;
   });
   return simpeTest;
 }
 function createClass(_class) {
   const umlAlias = {}
+  _graphs.requestId
   eval(` umlAlias.${_class.name} = class extends _class {
     constructor(...args) {
       super(...args);
@@ -89,13 +88,12 @@ export function setTraceId(requestId: string) {
 }
 
 function _applyGraph(this: any, originalMethod: any, args: any[], error: Error) {
-
   const requestId = _graphs._getRequestId();
-  let startTime, previous = { className: "Root", method: "" }, current = { className: "Root", method: "" };
+  let startTime, previous = { className: "Root", method: "", filePath: "" }, current = { className: "Root", method: "", filePath: "" };
   if (requestId) {
     let stack = stackHandler.getStackMethod(error);
-    const current = stack[0];
-    const previous = stack[1] || { className: "Root", method: "", filePath: "" };
+    current = stack[0];
+    previous = stack[1] || { className: "Root", method: "", filePath: "" };
     startTime = new Date();
     const nodesById = _graphs.graphs[requestId] || [];
     const newNode = new GraphNode(previous.className, previous.method, current.className, current.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request);
@@ -124,12 +122,12 @@ function handleResponse(result: any, prevClassName: string, prevMethod: string, 
 
   if (result instanceof Promise) {
     result.then((res: any) => {
-      const newNode = new GraphNode(className, prevMethod, prevClassName, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync);
+      const newNode = new GraphNode(prevClassName, prevMethod, className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync);
       nodes.push(newNode);
       return res;
     })
   }
-  const newNode = new GraphNode(className, prevMethod, prevClassName, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), result instanceof Promise ? NodeType.AsyncReturn : NodeType.Response);
+  const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), result instanceof Promise ? NodeType.AsyncReturn : NodeType.Response);
   nodes.push(newNode);
   _graphs.graphs[_graphs._getRequestId()] = nodes;
 }

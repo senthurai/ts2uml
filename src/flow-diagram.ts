@@ -1,4 +1,4 @@
-import { _graphs, expand, fntoReadable, GraphNode, NodeType } from "./model";
+import { _graphs, expand, fntoReadable, GraphNode, NodeType, umlConfig } from "./model";
 import fs from "fs";
 //getFlowDiagram
 export function _getFlowDiagram(): string {
@@ -8,7 +8,7 @@ export function _getFlowDiagram(): string {
             let seq = getFlowFromNode(node);
             const root = "./.ts2uml/";
             fs.existsSync(root) || fs.mkdirSync("./.ts2uml/", { recursive: true });
-            const flow = "```mermaid\nflowchart\n" + seq + "\n```";
+            const flow = "```mermaid\nflowchart LR\n" + seq + "\n```";
             fs.writeFileSync(root + "flowchart_" + key + ".md", flow);
             return flow;
         }).join("\n");
@@ -27,7 +27,7 @@ export function _getFlowDiagram(): string {
 function getFlowFromNode(nodes: GraphNode[]) {
     let flow = "";
     const participants: {} = {};
-    nodes.filter(n => n.type == NodeType.Request).forEach((node) => {
+    nodes.filter(n => n.type == NodeType.Request).forEach((node, i) => {
         if (!participants[node.source]) {
             participants[node.source] = {};
         }
@@ -35,20 +35,19 @@ function getFlowFromNode(nodes: GraphNode[]) {
             participants[node.reciever] = {};
         }
         participants[node.source][node.srcMethod] = undefined;
-        participants[node.reciever][node.method] = undefined;
-        if (participants[node.srcMethod + "-" + node.method]) return;
-        flow += `\n${node.srcMethod ? node.srcMethod : node.source}-->${node.method ? node.method : node.reciever}`;
-        participants[node.srcMethod + "-" + node.method] = true;
+        participants[node.reciever][node.recMethod] = undefined;
+        const path = `\n${node.srcMethod ? node.srcMethod : node.source}-->${node.recMethod ? node.recMethod : node.reciever}`;
+        if (participants[path]) return;
+        flow += path;
+        participants[path] = true;
     });
+
     Object.keys(participants).filter(p => !p.includes("-")).forEach((p) => {
         flow += `\nsubgraph ${p}[${fntoReadable(expand(p))}]`
         const methods = Object.keys(participants[p]);
-        methods.forEach((m) => {
-            if (m == 'undefined') return;
-            flow += `\n${m}` + (m && `[${fntoReadable(expand(m))}]`);
-        });
-        if(methods && methods.length>1)
-        flow += `\nclick ${ Object.keys(participants[p]).join(",")} href "${_graphs.remoteUrl[p]}" "${_graphs.remoteUrl[p]}"`
+        methods.filter(m => m && m != 'undefined' && m != 'null').forEach((m) => flow += `\n${m}` + (m && `[${fntoReadable(expand(m))}]`));
+        if (methods && methods.length > 1 && umlConfig.remoteBaseUrl)
+            flow += `\nclick ${Object.keys(participants[p]).join(",")} href "${_graphs.remoteUrl[p]}" "${_graphs.remoteUrl[p]}"`
         flow += `\nend`
     });
     return flow;

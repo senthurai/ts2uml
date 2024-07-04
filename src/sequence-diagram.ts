@@ -51,7 +51,7 @@ function getSequenceFromNode(nodes: GraphNode[], dedups: string[], participants:
       sequence += "\nParticipant " + node.reciever + " as " + actorDest
       participants.push(node.reciever);
     }
-    sequence += `\n${node.source} ${getSequenceDirection(node)} ${node.reciever}: ${fntoReadable(expand(node.method))}`;
+    sequence += `\n${node.type == NodeType.Request ? node.source : node.reciever} ${getSequenceDirection(node)} ${node.type == NodeType.Request ? node.reciever : node.source}: ${fntoReadable(expand(node.type == NodeType.Request ? node.recMethod : node.srcMethod||node.recMethod))}`;
     if (!dedups.includes(node.timestamp + "")) {
       let result = getTimeStamp(node, isDtimeSet);
       result && (sequence += `\nNote left of ${node.source}:${result}`)
@@ -122,7 +122,7 @@ function getSequenceTemplateFromNode(nodes: GraphNode[], sequenceArray: string[]
     if (!participants.includes(node.source)) {
       sequence = handleParticipant(node.source, actorSrc, sequence, sequenceArray, participants);
     }
-    if (!participants.includes(node.reciever)) { 
+    if (!participants.includes(node.reciever)) {
       sequence = handleParticipant(node.reciever, actorDest, sequence, sequenceArray, participants);
     }
     let seq = parseSequence(node);
@@ -134,7 +134,7 @@ function getSequenceTemplateFromNode(nodes: GraphNode[], sequenceArray: string[]
 
 function handleParticipant(actorAbbr: string, actor: string, sequence: string, sequenceArray: string[], participants: string[]) {
   const participant = addParticipant(actorAbbr, actor);
-   sequenceArray.push(participant);
+  sequenceArray.push(participant);
   participants.push(actorAbbr);
   return sequence;
 }
@@ -179,7 +179,7 @@ function calculateMean(participants: string[], sequenceArray: string[], seq: str
 }
 
 function parseSequence(node: GraphNode) {
-  return `\n${node.source} ${getSequenceDirection(node)} ${node.reciever}: ${fntoReadable(expand(node.method))}`;
+  return `\n${node.type===NodeType.Request?node.source:node.reciever} ${getSequenceDirection(node)} ${node.type===NodeType.Request?node.reciever:node.source}: ${fntoReadable(expand(node.recMethod))}`;
 }
 
 function getSequenceDirection(node: GraphNode) {

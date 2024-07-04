@@ -10,7 +10,10 @@ This project, ts2uml, is designed to convert TypeScript code into UML diagrams.
 
 This script is designed to read TypeScript files from a given directory (including subdirectories) and add a @uml() decorator to any classes that don't already have it. The directory path is provided as a command-line argument.
 
-Executing uml-sprinkler is optional if you choose to do manually.
+Executing uml-sprinkler is optional if you choose to do manually annotate the methods and classes.
+
+![Sequence Image](https://raw.githubusercontent.com/senthurai/ts2uml/master/sprnklr.png)
+
 
 ### Use the sequence decorator in your TypeScript classes, follow these steps:
 

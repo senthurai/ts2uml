@@ -9,14 +9,14 @@ export enum NodeType {
 
 export class GraphNode {
   readonly source: string;
-  readonly method: string;
+  readonly recMethod: string;
   readonly reciever: string;
   readonly srcMethod: string;
   constructor(source: string, srcMethod: string, reciever: string, method: string, public readonly args: string, public timestamp: number, public type: NodeType) {
-    this.source = abbreviate(source);
-    this.method = abbreviate(method);
-    this.srcMethod = abbreviate(srcMethod);
-    this.reciever = abbreviate(reciever);
+    this.source = source && abbreviate(source);
+    this.recMethod = method && abbreviate(method);
+    this.srcMethod = srcMethod && abbreviate(srcMethod);
+    this.reciever = reciever && abbreviate(reciever);
   }
 }
 function abbreviate(name: string) {
@@ -40,14 +40,14 @@ export function expand(short: string): string {
   return _graphs.dedups[short] || short;
 }
 class UmlConfig {
-  remoteBaseUrl: string = "";
-  enableLink: boolean = true;
+  remoteBaseUrl: string = null;
+  enableLink: boolean = false;
 
 }
 class SequenceGraph {
   dedups: string[] = []
   requestId: string = "";
-  staticMethods: {} = {};
+  methods: {} = {};
   remoteUrl: {} = {};
   _getRequestId() {
     return this.requestId;

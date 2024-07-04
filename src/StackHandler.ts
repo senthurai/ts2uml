@@ -1,15 +1,15 @@
 import fs from 'fs';
 import { _graphs, umlConfig } from './model';
 export class StackHandler {
-    readonly excludeList = ["Module", "_compile"]
+    readonly excludeList = ["Module", "_compile", 'processTicksAndRejections', "Object.<anonymous>", "Function.Module._load", "Function.Module.runMain", "Function.Module._resolveFilename", "Function.Module._load", "Module.require", "Module.load", "Module._compile", "Object.Module"]
 
     findClassAndMethodName(filePath: string, targetLineNumber: number): { className: string | null, method: string | null } {
         const content = fs.readFileSync(filePath, 'utf8');
         const lines = content.split(/\r?\n/);
-        let currentClassName = null;
+        let currentClassName = "Root";
         let currentMethodName = null;
 
-        for (let i = 0; i < lines.length; i++) {
+        for (let i = targetLineNumber; i > lines.length; i--) {
             const line = lines[i];
             const lineNumber = i + 1;
 
@@ -26,67 +26,40 @@ export class StackHandler {
             }
 
             // Check if the target line number is reached
-            if (lineNumber === targetLineNumber) {
+            if (currentClassName) {
                 return { className: currentClassName, method: currentMethodName };
             }
         }
 
         // Return null if no class or method is found at the given line number
-        return { className: null, method: null };
+        return { className: currentClassName, method: currentMethodName };
     }
-    findDeclaredType(filePath: string, objectName: string, lineNumber: number): { declaredType: string, declaredMethod: string } {
-        const content = fs.readFileSync(filePath, 'utf8');
-        let declaredType = objectName;
-        let declaredMethod = "";
-        const varMatch = content.match(new RegExp(`(let|const|var)\\s+${objectName}\\s*(:\\s*(\\w+))?\\s*=\\s*new\\s+(\\w+)\\(`));
-        if (varMatch && (varMatch[4])) {
-            declaredType = varMatch[4];
-        } else {
-            const varMatch = content.match(new RegExp(`(let|const|var)\\s+${objectName}\\s*(:\\s*(\\w+))?\\s*=\\s*(\\w+)\\.(\\w+)`));
-            if (varMatch && varMatch[4]) {
-                declaredType = varMatch[4];
-                declaredMethod = varMatch[5];
-            }
-            if (declaredType === "this") {
-                declaredType = this.findClassAndMethodName(filePath, lineNumber).className;
-            } else {
-                const stack = this.findDeclaredType(filePath, declaredType, lineNumber);
-                declaredType = stack.declaredType;
-                declaredMethod = stack.declaredMethod;
-            }
-        }
 
-        // Add more patterns as needed, such as for interfaces, type aliases, etc.
-        return { declaredType, declaredMethod };
-    }
 
     findPromiseStartMethod(filePath: string, targetLineNumber: number): { method: string, className: string } {
         const content = fs.readFileSync(filePath, 'utf8');
         const lines = content.split(/\r?\n/);
-        let method = null;
-        let className = "";
+        let method = undefined;
+        let className = "Root";
         let thenFound = false;
         for (let i = targetLineNumber - 1; i >= 0; i--) {
             const line = lines[i];
             // Simplified regex to match a method call that might return a promise
             // This regex needs to be adjusted based on the actual coding patterns
-            const methodCallMatch = line.match(/\s*(\w+)\.(\w+)\(/);
-            const thenMatch = line.match(/(\w+)(\(.*\))?\.then\(/);
+            const methodCallMatch = line.match(/\s*(\w+|(\w+)\.(\w+))\(/);
+            const thenMatch = line.match(/(\w+)?(\(.*\))?\.then\(/);
 
             if (thenMatch) {
                 thenFound = true
             }
-            if (methodCallMatch && thenFound) {
+            if (methodCallMatch && methodCallMatch[1] !== 'then' && thenFound) {
                 // Found a potential promise starting method call
-                className = methodCallMatch[1];
-                method = methodCallMatch[2];
-                if (className === "this") {
-                    className = this.findClassAndMethodName(filePath, i).className;
-                } else {
-                    const stack = this.findDeclaredType(filePath, className, i);
-                    className = stack.declaredType;
-                    method = method === 'then' ? stack.declaredMethod : method;
-                }
+                className = methodCallMatch[2] || methodCallMatch[1];
+                method = methodCallMatch[3];
+                const CM = this.findClassAndMethodName(filePath, i);
+                className = CM.className || 'Root';
+                method = CM.method;
+
                 break;
             }
         }
@@ -101,7 +74,7 @@ export class StackHandler {
             stack[i++] = this.processStackLine(line.replace(/umlAlias\./g, ""));
 
         })
-        return stack.filter((s) => s !== null && (!this.excludeList.includes(s.className) && !this.excludeList.includes(s.method))).slice(0, 2);
+        return stack.slice(0, 2);
     }
 
     parseRemoteUrl(remote: string, local: string): string {
@@ -120,7 +93,7 @@ export class StackHandler {
         // Extract the path part from the remote URL, assuming it might be from GitHub, Bitbucket, or similar
         // This regex aims to capture the path after the third slash that comes after the domain name
         // e.g., https://github.com/user/repo/path/to/file or https://bitbucket.org/user/repo/path/to/file
-        const pathMatch = remote.match(/^[^:]+:\/\/[^\/]+\/[^\/]+\/[^\/]+\/(.*)/);
+        const pathMatch = (remote + "").match(/^[^:]+:\/\/[^\/]+\/[^\/]+\/[^\/]+\/(.*)/);
         if (!pathMatch) return ""; // No valid path found in the URL
 
         const remotePath = pathMatch[1].toLowerCase(); // Convert to lower case to make the comparison case-insensitive
@@ -140,9 +113,12 @@ export class StackHandler {
 
     processStackLine(line: string) {
         if (line.includes("at ")) {
-            if (line.includes("Object.<anonymous>")) {
-                return null
+            for (const exclude of this.excludeList) {
+                if (line.includes(exclude)) {
+                    return null;
+                }
             }
+
             const parts = line.split("at ")[1].split(" ");
             if (parts.length > 1) {
                 const classMethod = parts[0].split(".");
@@ -153,10 +129,10 @@ export class StackHandler {
                     method = line.replace(/.*\[as (.*?)\].*/, "$1");
                 }
                 if (className?.includes("Function")) {
-                    className = _graphs.staticMethods[method];
+                    className = _graphs.methods[method];
                 }
                 let filePath = localFilePath;
-                if(umlConfig.enableLink){
+                if (umlConfig.enableLink) {
                     filePath = this.parseRemoteUrl(umlConfig.remoteBaseUrl, localFilePath);
                 }
                 return { className, method, filePath };

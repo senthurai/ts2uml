@@ -3,6 +3,7 @@
 
 import { _graphs, umlConfig } from "../model";
 import { getFlowDiagram, getSequence, getSequenceTemplate, setTraceId, uml } from "../uml-decorator";
+import { myFunction } from "./index.test";
 
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -53,21 +54,19 @@ setTraceId("R12");
 console.log("1.Hello world");
 let l1 = new MyClass("d");
 console.log("2.Hello world");
+myFunction(
 
-l1.myMethod().then(() => {
-  console.log("3.Hello world");
-  l1.myMethod().then(() => {
-    console.log("5.Hello world");
-    let s=l1.myMethod();
-    
-    
-    s.then(() => {
-      console.log("6.Hello world");
-      console.log("----" + getSequence() + "----");
-      console.log("4.Hello world");
-      console.log("----" + getFlowDiagram() + "----");
-      console.log("----" + getSequenceTemplate() + "----");
-    });
+).then(() => {
+  console.log("5.Hello world");
+  let s = l1.myMethod();
 
+
+  s.then(() => {
+    console.log("6.Hello world");
+    console.log("----" + getSequence() + "----");
+    console.log("4.Hello world");
+    console.log("----" + getFlowDiagram() + "----");
+    console.log("----" + getSequenceTemplate() + "----");
   });
+
 });
