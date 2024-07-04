@@ -1,7 +1,8 @@
 
 import { _getFlowDiagram } from "./flow-diagram";
 import { GraphNode, NodeType, _graphs } from "./model";
-import { _getSequence, _getSequenceTemplate } from './sequence-diagram';
+import { _getSequence } from './sequence-diagram';
+import { _getSequenceTemplate } from "./sequence-template-diagram";
 import { StackHandler } from './StackHandler';
 const defaultFn = ["constructor", "length", "name", "prototype", "__defineGetter__", "__defineSetter__", "hasOwnProperty", "__lookupGetter__", "__lookupSetter__", "isPrototypeOf", "propertyIsEnumerable", "toString", "valueOf", "__proto__", "toLocaleString"]
 /**

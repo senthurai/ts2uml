@@ -1,6 +1,6 @@
 {
   "name": "ts2uml",
-  "version": "0.0.34",
+  "version": "0.0.35",
   "description": "typescript workflow to uml sequence",
   "main": "index.js",
   "types": "index.d.ts",
@@ -11,8 +11,5 @@
   },
   "keywords": ["ts", "uml"],
   "author": "tin2tin",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/node": "^20.12.12"
-  }
+  "license": "ISC"
 }

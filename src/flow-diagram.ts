@@ -36,18 +36,22 @@ function getFlowFromNode(nodes: GraphNode[]) {
         }
         participants[node.source][node.srcMethod] = undefined;
         participants[node.reciever][node.recMethod] = undefined;
-        const path = `\n${node.srcMethod ? node.srcMethod : node.source}-->${node.recMethod ? node.recMethod : node.reciever}`;
+        const path = `\n${node.srcMethod ? node.srcMethod : node.source}---->${node.recMethod ? node.recMethod : node.reciever}`;
         if (participants[path]) return;
-        flow += path;
         participants[path] = true;
+        flow += path.replace(/---->/g, `--${Object.keys(participants).filter(p => p.includes("--")).length}-->`);
     });
 
     Object.keys(participants).filter(p => !p.includes("-")).forEach((p) => {
         flow += `\nsubgraph ${p}[${fntoReadable(expand(p))}]`
         const methods = Object.keys(participants[p]);
         methods.filter(m => m && m != 'undefined' && m != 'null').forEach((m) => flow += `\n${m}` + (m && `[${fntoReadable(expand(m))}]`));
-        if (methods && methods.length > 1 && umlConfig.remoteBaseUrl)
-            flow += `\nclick ${Object.keys(participants[p]).join(",")} href "${_graphs.remoteUrl[p]}" "${_graphs.remoteUrl[p]}"`
+        if (methods && methods.length > 1 && umlConfig.remoteBaseUrl) {
+            const links = Object.keys(participants[p]).filter(m => m && m != 'undefined' && m != 'null').join(",");
+            if (links && links.length) {
+                flow += `\nclick ${links} href "${_graphs.remoteUrl[p]}" "${_graphs.remoteUrl[p]}"`
+            }
+        }
         flow += `\nend`
     });
     return flow;
