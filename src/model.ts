@@ -4,7 +4,8 @@ export enum NodeType {
   Request = "Request",
   Response = "Response",
   ResponseAsync = "ResponseAsync",
-  AsyncReturn = "AsyncReturn"
+  AsyncReturn = "AsyncReturn",
+  Boolean = "Boolean",
 }
 
 export class GraphNode {

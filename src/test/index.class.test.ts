@@ -3,7 +3,7 @@
 
 import { _graphs, umlConfig } from "../model";
 import { getFlowDiagram, getSequence, getSequenceTemplate, setTraceId, uml } from "../uml-decorator";
-import { myFunction } from "./index.test";
+import {myFunction} from "./util.test";
 
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -50,7 +50,7 @@ class MyClass2 {
   }
 }
 umlConfig.remoteBaseUrl = "https://github.com/senthurai/ts2uml/blob/master/src"
-setTraceId("R12");
+setTraceId("P12");
 console.log("1.Hello world");
 let l1 = new MyClass("d");
 console.log("2.Hello world");

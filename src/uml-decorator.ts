@@ -120,17 +120,20 @@ function _applyGraph(this: any, originalMethod: any, args: any[], error: Error) 
 
 function handleResponse(result: any, prevClassName: string, prevMethod: string, className: string, method: string, startTime: Date) {
   const nodes = _graphs.graphs[_graphs._getRequestId()] || [];
-
   if (result instanceof Promise) {
     result.then((res: any) => {
       const newNode = new GraphNode(prevClassName, prevMethod, className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync);
       nodes.push(newNode);
       return res;
     })
+    const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), NodeType.AsyncReturn);
+    nodes.push(newNode);
+    _graphs.graphs[_graphs._getRequestId()] = nodes;
+  } else {
+    const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : result, new Date().getTime() - startTime.getTime(), result instanceof Boolean ? NodeType.Boolean : NodeType.Response);
+    nodes.push(newNode);
+    _graphs.graphs[_graphs._getRequestId()] = nodes;
   }
-  const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), result instanceof Promise ? NodeType.AsyncReturn : NodeType.Response);
-  nodes.push(newNode);
-  _graphs.graphs[_graphs._getRequestId()] = nodes;
 }
 
 function _clear() {

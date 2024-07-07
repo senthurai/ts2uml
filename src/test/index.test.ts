@@ -2,9 +2,6 @@
 import { getFlowDiagram, getSequence, getSequenceTemplate, setTraceId, uml } from "../uml-decorator";
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 //
-export async function  myFunction(){
-  console.log("3.Hello fn World");
-}
 
 @uml()
 class MyClass {

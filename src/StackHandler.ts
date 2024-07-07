@@ -8,30 +8,29 @@ export class StackHandler {
         const lines = content.split(/\r?\n/);
         let currentClassName = "Root";
         let currentMethodName = null;
-
-        for (let i = targetLineNumber; i > lines.length; i--) {
+        
+        // Ensure targetLineNumber is within bounds
+        if (targetLineNumber < 0 || targetLineNumber > lines.length) {
+            throw new Error("targetLineNumber is out of bounds");
+        }
+        
+        for (let i = targetLineNumber - 1; i >= 0; i--) {
             const line = lines[i];
-            const lineNumber = i + 1;
-
-            // Match class declaration
-            const classMatch = line.match(/class\s+(\w+)/);
+        
+            // Match class declaration, considering possible keywords like 'export'
+            const classMatch = line.match(/(?:export\s+)?(?:abstract\s+)?class\s+(\w+)/);
             if (classMatch) {
                 currentClassName = classMatch[1];
+                break;
             }
-
-            // Match method declaration (simplified, assuming methods are not nested)
-            const methodMatch = line.match(/(?:async\s+)?(?:static\s+)?\w+\s+(\w+)\(/);
-            if (methodMatch) {
-                currentMethodName = methodMatch[1];
-            }
-
-            // Check if the target line number is reached
-            if (currentClassName) {
-                return { className: currentClassName, method: currentMethodName };
+        
+            const methodOrFunctionMatch = line.match(/(?:async\s+)?(?:function\s+)?(?:public\s+|private\s+|protected\s+|static\s+)?\*?\s*(\w+)\s*(?:\((?:[^)]*)\))\s*(?:=>)?{/);
+            if (!currentMethodName && methodOrFunctionMatch) {
+                currentMethodName = methodOrFunctionMatch[1];
             }
         }
-
-        // Return null if no class or method is found at the given line number
+        
+        // Return after processing all lines or reaching the target line
         return { className: currentClassName, method: currentMethodName };
     }
 
@@ -52,6 +51,7 @@ export class StackHandler {
             if (thenMatch) {
                 thenFound = true
             }
+
             if (methodCallMatch && methodCallMatch[1] !== 'then' && thenFound) {
                 // Found a potential promise starting method call
                 className = methodCallMatch[2] || methodCallMatch[1];
