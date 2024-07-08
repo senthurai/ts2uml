@@ -1,13 +1,13 @@
 {
   "name": "ts2uml",
-  "version": "0.0.36",
+  "version": "0.0.37",
   "description": "typescript workflow to uml sequence",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
     "comment": " echo post-build is a custom script",
     "clean": "rimraf dist",
-    "build": "clean && tsc && post-build",
+    "build": "npm run clean && tsc && post-build",
     "test": "jest",
     "publish": "npm run build && cd dist && npm publish",
     "uml-sprinkler": "uml-sprinkler src/test"

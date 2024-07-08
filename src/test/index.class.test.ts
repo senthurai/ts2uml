@@ -15,13 +15,12 @@ export class MyClass {
     console.log(s.length);
   }
 
-  public async myMethod() {
+  public  async myMethod() {
     console.log(" Hello " + this.i++);
     const ref = this.myMethod3();
     ref.then(() => {
       this.myMethod5();
     });
-
   }
 
   public static myMethod2() {
@@ -35,7 +34,7 @@ export class MyClass {
     // Method implementation
     console.log(" end the world 3");
   }
-  public async myMethod5() {
+  private async myMethod5() {
     // Method implementation
     console.log(" end the world 5");
   }

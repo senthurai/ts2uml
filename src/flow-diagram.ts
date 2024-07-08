@@ -1,4 +1,4 @@
-import { _graphs, expand, fntoReadable, GraphNode, NodeType, umlConfig } from "./model";
+import { _graphs, expand, fntoReadable, GraphNode, Modifier, NodeType, umlConfig } from "./model";
 import fs from "fs";
 //getFlowDiagram
 export function _getFlowDiagram(): string {
@@ -36,7 +36,7 @@ function getFlowFromNode(nodes: GraphNode[]) {
         }
         participants[node.source][node.srcMethod] = undefined;
         participants[node.reciever][node.recMethod] = undefined;
-        const path = `\n${node.srcMethod ? node.srcMethod : node.source}---->${node.recMethod ? node.recMethod : node.reciever}`;
+        const path = `${node.modifier!=Modifier.Public?("\n%%"+node.modifier+""):""}\n${node.srcMethod ? node.srcMethod : node.source}---->${node.recMethod ? node.recMethod : node.reciever}`;
         if (participants[path]) return;
         participants[path] = true;
         flow += path.replace(/---->/g, `--${Object.keys(participants).filter(p => p.includes("--")).length}-->`);

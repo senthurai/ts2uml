@@ -1,6 +1,6 @@
 
 import { _getFlowDiagram } from "./flow-diagram";
-import { GraphNode, NodeType, _graphs } from "./model";
+import { GraphNode, Modifier, NodeType, _graphs } from './model';
 import { _getSequence } from './sequence-diagram';
 import { _getSequenceTemplate } from "./sequence-template-diagram";
 import { StackHandler } from './StackHandler';
@@ -84,20 +84,35 @@ function overrideFn(originalMethod: any) {
     return result;
   }
 }
+
 export function setTraceId(requestId: string) {
   _graphs._setRequestId(requestId);
 }
 
+function findModifier(originalMethod: any) {
+  const impl = originalMethod.toString();
+  if (impl.indexOf("private") > -1) {
+    return Modifier.Private;
+  } else if (impl.indexOf("protected") > -1) {
+    return Modifier.Protected;
+  } else {
+    return Modifier.Public;
+  }
+}
+
+
 function _applyGraph(this: any, originalMethod: any, args: any[], error: Error) {
   const requestId = _graphs._getRequestId();
-  let startTime, previous = { className: "Root", method: "", filePath: "" }, current = { className: "Root", method: "", filePath: "" };
+  let startTime,modifier, previous = { className: "Root", method: "", filePath: "" }, current = { className: "Root", method: "", filePath: "" };
+
   if (requestId) {
+      modifier = findModifier(originalMethod);
     let stack = stackHandler.getStackMethod(error);
     current = stack[0];
     previous = stack[1] || { className: "Root", method: "", filePath: "" };
     startTime = new Date();
     const nodesById = _graphs.graphs[requestId] || [];
-    const newNode = new GraphNode(previous.className, previous.method, current.className, current.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request);
+    const newNode = new GraphNode(previous.className, previous.method, current.className, current.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request,modifier);
     _graphs.remoteUrl[newNode.source] = previous.filePath;
     nodesById.push(newNode);
     _graphs.graphs[requestId] = nodesById;
@@ -105,32 +120,31 @@ function _applyGraph(this: any, originalMethod: any, args: any[], error: Error) 
   try {
     const result = originalMethod.call(this, ...args);
     if (requestId) {
-      handleResponse(result, previous.className, previous.method, current.className, current.method, startTime);
+      handleResponse(result, previous.className, previous.method, current.className, current.method, startTime,modifier);
     }
     return result;
   } catch (e) {
     if (requestId) {
-      handleResponse(e, previous.className, previous.method, current.className, current.method, startTime);
+      handleResponse(e, previous.className, previous.method, current.className, current.method, startTime,modifier);
       _getSequence();
-
     }
     throw e;
   }
 }
 
-function handleResponse(result: any, prevClassName: string, prevMethod: string, className: string, method: string, startTime: Date) {
+function handleResponse(result: any, prevClassName: string, prevMethod: string, className: string, method: string, startTime: Date, modifier: Modifier) {
   const nodes = _graphs.graphs[_graphs._getRequestId()] || [];
   if (result instanceof Promise) {
     result.then((res: any) => {
-      const newNode = new GraphNode(prevClassName, prevMethod, className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync);
+      const newNode = new GraphNode(prevClassName, prevMethod, className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync, modifier);
       nodes.push(newNode);
       return res;
     })
-    const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), NodeType.AsyncReturn);
+    const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), NodeType.AsyncReturn, Modifier.Public);
     nodes.push(newNode);
     _graphs.graphs[_graphs._getRequestId()] = nodes;
   } else {
-    const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : result, new Date().getTime() - startTime.getTime(), result instanceof Boolean ? NodeType.Boolean : NodeType.Response);
+    const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : result, new Date().getTime() - startTime.getTime(), result instanceof Boolean ? NodeType.Boolean : NodeType.Response, Modifier.Public);
     nodes.push(newNode);
     _graphs.graphs[_graphs._getRequestId()] = nodes;
   }

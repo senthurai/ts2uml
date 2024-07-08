@@ -8,12 +8,18 @@ export enum NodeType {
   Boolean = "Boolean",
 }
 
+export enum Modifier {
+  Public = "public",
+  Private = "private",
+  Protected = "protected"
+}
+
 export class GraphNode {
   readonly source: string;
   readonly recMethod: string;
   readonly reciever: string;
   readonly srcMethod: string;
-  constructor(source: string, srcMethod: string, reciever: string, method: string, public readonly args: string, public timestamp: number, public type: NodeType) {
+  constructor(source: string, srcMethod: string, reciever: string, method: string, public readonly args: string, public timestamp: number, public type: NodeType, public modifier: Modifier) {
     this.source = source && abbreviate(source);
     this.recMethod = method && abbreviate(method);
     this.srcMethod = srcMethod && abbreviate(srcMethod);
