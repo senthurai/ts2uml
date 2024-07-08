@@ -1,6 +1,6 @@
 {
   "name": "ts2uml",
-  "version": "0.0.46",
+  "version": "0.0.47",
   "description": "typescript workflow to uml sequence",
   "main": "index.js",
   "types": "index.d.ts",
@@ -9,7 +9,8 @@
     "clean": "rimraf dist",
     "build": "npm run clean && tsc && sh post-build",
     "test": "jest",
-    "publish": "npm run build && cd dist && npm publish"
+    "publish": "npm run build && cd dist && npm publish",
+    "uml-sprinkler": "uml-sprinkler src"
   },
   "keywords": [
     "ts",
@@ -20,5 +21,5 @@
   "devDependencies": {
     "@types/node": "^20.12.12",
     "rimraf": "^5.0.8"
-  } 
+  }
 }

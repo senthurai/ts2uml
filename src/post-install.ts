@@ -31,7 +31,7 @@ handlePackageJson();
 
 function handlePackageJson() {
     // Step 2: Define the path to the package.json file
-    const packageJsonPath = join(__dirname, 'package.json');
+    const packageJsonPath = join(dest, 'package.json');
 
     // Step 3: Read the package.json file into a variable
     if (existsSync(packageJsonPath)) {
