@@ -1,8 +1,12 @@
+
+import { uml } from 'ts2uml';
 import { getFlowDiagram, getSequence, getSequenceTemplate, setTraceId, uml } from "../uml-decorator";
  
 setTraceId("S12");
 @uml()
-export  class MyClassSimple{
+export 
+@uml()
+ class MyClassSimple{
     public async myMethod3() {  
         console.log("3.Hello fn World");
     }

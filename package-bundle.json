@@ -1,13 +1,13 @@
 {
   "name": "ts2uml",
-  "version": "0.0.37",
+  "version": "0.0.46",
   "description": "typescript workflow to uml sequence",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "postinstall": "node post-install"
+    "postinstall": "node ./post-install.js"
   },
   "keywords": ["ts", "uml"],
   "author": "tin2tin",

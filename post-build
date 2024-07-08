@@ -9,9 +9,9 @@ mkdir -p dist
 # copy the files using single cp command without using loop for cp command
 
 # print the example of cp command looks like in the above scenario
-cp ${files[@]} dist/ && echo "Files copied successfully" || echo "Files not copied successfully" 
+cp ${files[@]} dist/ && echo "scripts copied successfully" || echo "scripts not copied successfully" 
 
-cp package-build.json dist/package.json && echo "Files copied successfully" || echo "Files not copied successfully" 
+cp ./package-bundle.json dist/package.json && echo "package.json copied successfully" || echo "package.json not copied successfully" 
 
 
 exit 0

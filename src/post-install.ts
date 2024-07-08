@@ -6,6 +6,7 @@ import { join } from 'path';
 const files = ['uml-sprinkler', 'uml-sprinkler.bat']
 const dest = join(__dirname, './../../');
 const local = join(__dirname, './../../node_modules/.bin');
+
 files.forEach(file => {
     const src = join(__dirname, file);
     try {
@@ -21,13 +22,12 @@ files.forEach(file => {
         else {
             console.log(`file ${src} does not exist`);
         }
-        handlePackageJson();
     } catch (e) {
         console.log(e);
     }
 
 });
-
+handlePackageJson();
 
 function handlePackageJson() {
     // Step 2: Define the path to the package.json file

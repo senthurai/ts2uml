@@ -1,7 +1,7 @@
 @echo off
 
 REM Array of files to copy
-set files=./uml-sprinkler* README.md
+set files=./src/uml-sprinkler* README.md
 
 REM Create the dist directory if it doesn't exist
 if not exist dist mkdir dist
