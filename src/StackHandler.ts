@@ -40,7 +40,7 @@ export class StackHandler {
             };
 
             // Match method or function declaration
-            const regex = /(\w+(?=\((?:[^()]*|\([^()]*\))*\)\s*{)|(?<=(let|const)\s+)\w+)/g;
+            const regex = /(\w+(?=\((?:[^()]*|\([^()]*\))*\)(:\s*\{(?:[^{}]*|\{[^{}]*\})*\})?\s*{)|(?<=(let|const)\s+)\w+(?=\s*=\s*[^()]*|\([^()]*\)*\)\s*=>\s*{))/g;
 
             const methodOrFunctionMatch = line.match(regex);
             if (!currentMethodName && methodOrFunctionMatch && methodOrFunctionMatch[0]&& !["if", "for"].includes(methodOrFunctionMatch[0])) {
