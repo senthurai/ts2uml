@@ -8,29 +8,51 @@ export class StackHandler {
         const lines = content.split(/\r?\n/);
         let currentClassName = "Root";
         let currentMethodName = null;
-        
+        let blockDepth = 0; // Track the depth of nested blocks
+        let gothrough = true;
         // Ensure targetLineNumber is within bounds
         if (targetLineNumber < 0 || targetLineNumber > lines.length) {
             throw new Error("targetLineNumber is out of bounds");
         }
-        
+
         for (let i = targetLineNumber - 1; i >= 0; i--) {
             const line = lines[i];
-        
+
+            // Increase or decrease block depth based on opening and closing braces
+            blockDepth += (line.match(/{/g) || []).length;
+            blockDepth -= (line.match(/}/g) || []).length;
+
+
+
             // Match class declaration, considering possible keywords like 'export'
-            const classMatch = line.match(/(?:export\s+)?(?:abstract\s+)?class\s+(\w+)/);
-            if (classMatch) {
+            const classMatch = line.match(/(?<=(?:export\s+)?(?:abstract\s+)?class\s+)(\w+)/);
+            if ( currentMethodName && classMatch) {
                 currentClassName = classMatch[1];
-                break;
+                break; // Stop searching once a class is found
             }
-        
-            const methodOrFunctionMatch = line.match(/(?:async\s+)?(?:function\s+)?(?:public\s+|private\s+|protected\s+|static\s+)?\*?\s*(\w+)\s*(?:\((?:[^)]*)\))\s*(?:=>)?{/);
-            if (!currentMethodName && methodOrFunctionMatch) {
-                currentMethodName = methodOrFunctionMatch[1];
+
+
+
+            // Skip processing if we're inside a nested block
+            if (blockDepth !== 1) {
+                gothrough = false;
+                continue;
+            };
+
+            // Match method or function declaration
+            const regex = /(\w+(?=\((?:[^()]*|\([^()]*\))*\)\s*{)|(?<=(let|const)\s+)\w+)/g;
+
+            const methodOrFunctionMatch = line.match(regex);
+            if (!currentMethodName && methodOrFunctionMatch && methodOrFunctionMatch[0]&& !["if", "for"].includes(methodOrFunctionMatch[0])) {
+                currentMethodName = methodOrFunctionMatch[0];
             }
         }
-        
-        // Return after processing all lines or reaching the target line
+
+        // Adjust for cases where blockDepth might not return to 0 due to unbalanced braces
+        if (blockDepth < 0) {
+            console.warn("Warning: Unbalanced braces detected. The results might not be accurate.");
+        }
+        console.log(currentClassName, " --> ", currentMethodName)
         return { className: currentClassName, method: currentMethodName };
     }
 

@@ -1,6 +1,6 @@
 
 import { _getFlowDiagram } from "./flow-diagram";
-import { GraphNode, Modifier, NodeType, _graphs } from './model';
+import { GraphNode, Modifier, NodeType, _graphs, umlConfig } from './model';
 import { _getSequence } from './sequence-diagram';
 import { _getSequenceTemplate } from "./sequence-template-diagram";
 import { StackHandler } from './StackHandler';
@@ -103,33 +103,47 @@ function findModifier(originalMethod: any) {
 
 function _applyGraph(this: any, originalMethod: any, args: any[], error: Error) {
   const requestId = _graphs._getRequestId();
-  let startTime,modifier, previous = { className: "Root", method: "", filePath: "" }, current = { className: "Root", method: "", filePath: "" };
+  let startTime, modifier, previous = { className: "Root", method: "", filePath: "" }, current = { className: "Root", method: "", filePath: "" };
 
   if (requestId) {
-      modifier = findModifier(originalMethod);
+    modifier = findModifier(originalMethod);
     let stack = stackHandler.getStackMethod(error);
     current = stack[0];
     previous = stack[1] || { className: "Root", method: "", filePath: "" };
     startTime = new Date();
     const nodesById = _graphs.graphs[requestId] || [];
-    const newNode = new GraphNode(previous.className, previous.method, current.className, current.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request,modifier);
+    const newNode = new GraphNode(previous.className, previous.method, current.className, current.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request, modifier);
     _graphs.remoteUrl[newNode.source] = previous.filePath;
     nodesById.push(newNode);
     _graphs.graphs[requestId] = nodesById;
   }
   try {
     const result = originalMethod.call(this, ...args);
+    if (result instanceof Promise) {
+      result.catch((e) => {
+        handleException(requestId, e, previous, current, startTime, modifier, args);
+      });
+    }
     if (requestId) {
-      handleResponse(result, previous.className, previous.method, current.className, current.method, startTime,modifier);
+      handleResponse(result, previous.className, previous.method, current.className, current.method, startTime, modifier);
     }
     return result;
   } catch (e) {
-    if (requestId) {
-      handleResponse(e, previous.className, previous.method, current.className, current.method, startTime,modifier);
-      _getSequence();
-    }
-    throw e;
+    handleException(requestId, e, previous, current, startTime, modifier, args);
   }
+}
+
+function handleException(requestId: string, e: any, previous: { className: string; method: string; filePath: string; }, current: { className: string; method: string; filePath: string; }, startTime: any, modifier: any, args: any[]) {
+  if (requestId) {
+    handleResponse(e, previous.className, previous.method, current.className, current.method, startTime, modifier);
+    _getSequence();
+  }
+  if (!umlConfig.disableErrorLogging) {
+    // print me proper error message with method name and arguments and stack trace
+    console.error(requestId + `: Error in ${current.className}.${current.method} with arguments ${JSON.stringify(args)}`);
+
+  }
+  throw e;
 }
 
 function handleResponse(result: any, prevClassName: string, prevMethod: string, className: string, method: string, startTime: Date, modifier: Modifier) {

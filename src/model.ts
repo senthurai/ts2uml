@@ -49,7 +49,7 @@ export function expand(short: string): string {
 class UmlConfig {
   remoteBaseUrl: string = null;
   enableLink: boolean = false;
-
+  disableErrorLogging: boolean = false;
 }
 class SequenceGraph {
   dedups: string[] = []

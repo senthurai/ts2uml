@@ -17,7 +17,7 @@ export function getSequenceDirection(node: GraphNode) {
   }
 }
 export function parseSequence(node: GraphNode) {
-  return `\n${node.type === NodeType.Request ? node.source : node.reciever} ${getSequenceDirection(node)} ${node.type === NodeType.Request ? node.reciever : node.source}: ${fntoReadable(expand(node.type == NodeType.Request ? node.recMethod : node.srcMethod || node.recMethod))}`;
+  return `\n${node.type === NodeType.Request ? node.source : node.reciever} ${getSequenceDirection(node)} ${node.type === NodeType.Request ? node.reciever : node.source}: ${fntoReadable(expand(node.recMethod))}`;
 }
 
 
