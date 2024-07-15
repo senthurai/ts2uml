@@ -27,7 +27,7 @@ export function _getFlowDiagram(): string {
 function getFlowFromNode(nodes: GraphNode[]) {
     let flow = "";
     const participants: {} = {};
-    nodes.filter(n => n.type == NodeType.Request).forEach((node, i) => {
+    nodes.filter(n => n.type === NodeType.ResponseAsync || n.type === NodeType.Request).forEach((node, i) => {
         if (!participants[node.source]) {
             participants[node.source] = {};
         }
@@ -36,13 +36,19 @@ function getFlowFromNode(nodes: GraphNode[]) {
         }
         participants[node.source][node.srcMethod] = undefined;
         participants[node.reciever][node.recMethod] = undefined;
-        const path = `${node.modifier!=Modifier.Public?("\n%%"+node.modifier+""):""}\n${node.srcMethod ? node.srcMethod : node.source}---->${node.recMethod ? node.recMethod : node.reciever}`;
+        let path = "";
+        if (node.type === NodeType.ResponseAsync) {
+            path = `${node.modifier != Modifier.Public ? ("\n%%" + node.modifier + "") : ""}\n${node.recMethod ? node.recMethod : node.reciever}-.o${node.srcMethod ? node.srcMethod : node.source}`;
+
+        } else if (node.type === NodeType.Request) {
+            path = `${node.modifier != Modifier.Public ? ("\n%%" + node.modifier + "") : ""}\n${node.srcMethod ? node.srcMethod : node.source}-->${node.recMethod ? node.recMethod : node.reciever}`;
+        }
         if (participants[path]) return;
         participants[path] = true;
-        flow += path.replace(/---->/g, `--${Object.keys(participants).filter(p => p.includes("--")).length}-->`);
+        flow += path.replace(/([-.=])([-.=])([o>])/g, `$1$2${Object.keys(participants).filter(p => p.includes("-")).length}$2$1$3`);
     });
 
-    Object.keys(participants).filter(p => !p.includes("-")).forEach((p) => {
+    Object.keys(participants).filter(p => !(p.includes("-") || p.includes("="))).forEach((p) => {
         flow += `\nsubgraph ${p}[${fntoReadable(expand(p))}]`
         const methods = Object.keys(participants[p]);
         methods.filter(m => m && m != 'undefined' && m != 'null').forEach((m) => flow += `\n${m}` + (m && `[${fntoReadable(expand(m))}]`));

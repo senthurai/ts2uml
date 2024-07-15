@@ -1,105 +1,94 @@
-import fs from 'fs';
-import { _graphs, umlConfig } from './model';
+
+import { _graphs, umlConfig, Modifier, StackInfo, Clazz, SourceData, Method } from './model';
+import * as ts from 'typescript';
+import * as fs from 'fs';
 export class StackHandler {
     readonly excludeList = ["Module", "_compile", 'processTicksAndRejections', "Object.<anonymous>", "Function.Module._load", "Function.Module.runMain", "Function.Module._resolveFilename", "Function.Module._load", "Module.require", "Module.load", "Module._compile", "Object.Module"]
 
-    findClassAndMethodName(filePath: string, targetLineNumber: number): { className: string | null, method: string | null } {
-        const content = fs.readFileSync(filePath, 'utf8');
-        const lines = content.split(/\r?\n/);
-        let currentClassName = "Root";
-        let currentMethodName = null;
-        let blockDepth = 0; // Track the depth of nested blocks
-        let gothrough = true;
-        // Ensure targetLineNumber is within bounds
-        if (targetLineNumber < 0 || targetLineNumber > lines.length) {
-            throw new Error("targetLineNumber is out of bounds");
-        }
-
-        for (let i = targetLineNumber - 1; i >= 0; i--) {
-            const line = lines[i];
-
-            // Increase or decrease block depth based on opening and closing braces
-            blockDepth += (line.match(/{/g) || []).length;
-            blockDepth -= (line.match(/}/g) || []).length;
-
-
-
-            // Match class declaration, considering possible keywords like 'export'
-            const classMatch = line.match(/(?<=(?:export\s+)?(?:abstract\s+)?class\s+)(\w+)/);
-            if ( currentMethodName && classMatch) {
-                currentClassName = classMatch[1];
-                break; // Stop searching once a class is found
-            }
-
-
-
-            // Skip processing if we're inside a nested block
-            if (blockDepth !== 1) {
-                gothrough = false;
-                continue;
-            };
-
-            // Match method or function declaration
-            const regex = /(\w+(?=\((?:[^()]*|\([^()]*\))*\)(:\s*\{(?:[^{}]*|\{[^{}]*\})*\})?\s*{)|(?<=(let|const)\s+)\w+(?=\s*=\s*[^()]*|\([^()]*\)*\)\s*=>\s*{))/g;
-
-            const methodOrFunctionMatch = line.match(regex);
-            if (!currentMethodName && methodOrFunctionMatch && methodOrFunctionMatch[0]&& !["if", "for"].includes(methodOrFunctionMatch[0])) {
-                currentMethodName = methodOrFunctionMatch[0];
+    findClassAndMethodName(fileName: string, lineNumber: number): { className?: string, method?: string, modifier?: Modifier } {
+        let currentClassName: string | undefined;
+        let currentMethodName: string | undefined;
+        let modifier: Modifier = Modifier.Public
+        let sourceData = _graphs.sourceData[fileName];
+        if (sourceData) {
+            let classAndMethod = sourceData.findClass(lineNumber);
+            currentClassName = classAndMethod?.class;
+            currentMethodName = classAndMethod?.method;
+            modifier = classAndMethod?.modifier;
+            if (currentMethodName) {
+                console.log(`---------------------------------------------------------------------------- trip saved`)
+                return { className: currentClassName, method: currentMethodName, modifier };
             }
         }
+        const fileContent = fs.readFileSync(fileName, 'utf-8');
+        const sourceFile = ts.createSourceFile(fileName, fileContent, ts.ScriptTarget.Latest, true);
+        sourceData = _graphs.sourceData[fileName] || new SourceData();
+        const method = new Method()
+        const clazz = new Clazz()
 
-        // Adjust for cases where blockDepth might not return to 0 due to unbalanced braces
-        if (blockDepth < 0) {
-            console.warn("Warning: Unbalanced braces detected. The results might not be accurate.");
+        _graphs.sourceData[fileName] = sourceData;
+        function find(node: ts.Node): void {
+            const { line: startLine } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+            const { line: endLine } = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+            if (startLine <= lineNumber && lineNumber <= endLine) {
+                if (ts.isMethodDeclaration(node) || ts.isFunctionDeclaration(node)) {
+                    // For methods and named functions, update the current method name
+                    if (node.name) {
+                        currentMethodName = node.name.getText(sourceFile);
+                        if (ts.isMethodDeclaration(node)) {
+                            modifier = node.modifiers?.some((mod) => mod.kind === ts.SyntaxKind.PrivateKeyword) ? Modifier.Private : Modifier.Public
+                            clazz.methods[currentMethodName] = method;
+                            method.start = startLine;
+                            method.end = endLine;
+                            method.modifier = modifier;
+                        }
+                        if (currentMethodName && currentClassName) {
+                            return;
+                        }
+                    }
+                } else if (ts.isClassDeclaration(node)) {
+                    // For class declarations, update the current class name and reset method name
+                    if (node.name) {
+                        currentClassName = node.name.getText(sourceFile) || "Root";
+
+                        clazz.methods = { ...clazz.methods, ...(sourceData.classes[currentClassName]?.methods || {}) };
+                        clazz.start = startLine;
+                        clazz.end = endLine;
+                        sourceData.classes[currentClassName] = clazz;
+                    }
+                    if (currentMethodName && currentClassName) {
+                        return;
+                    }
+
+                } else if (ts.isVariableDeclaration(node) && node.initializer && ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node)) {
+                    // For arrow functions or function expressions, check if it's assigned to a variable
+                    if (node.name) {
+                        currentMethodName = node.name.getText(sourceFile);
+                        const clazz = new Clazz()
+                        clazz.start = startLine;
+                        clazz.end = endLine;
+                        sourceData.classes[currentClassName] = clazz;
+                    }
+                }
+                ts.forEachChild(node, find);
+            }
         }
-        console.log(currentClassName, " --> ", currentMethodName)
-        return { className: currentClassName, method: currentMethodName };
+        ts.forEachChild(sourceFile, find);
+        return { className: currentClassName, method: currentMethodName, modifier };
     }
 
 
-    findPromiseStartMethod(filePath: string, targetLineNumber: number): { method: string, className: string } {
-        const content = fs.readFileSync(filePath, 'utf8');
-        const lines = content.split(/\r?\n/);
-        let method = undefined;
-        let className = "Root";
-        let thenFound = false;
-        for (let i = targetLineNumber - 1; i >= 0; i--) {
-            const line = lines[i];
-            // Simplified regex to match a method call that might return a promise
-            // This regex needs to be adjusted based on the actual coding patterns
-            const methodCallMatch = line.match(/\s*(\w+|(\w+)\.(\w+))\(/);
-            const thenMatch = line.match(/(\w+)?(\(.*\))?\.then\(/);
 
-            if (thenMatch) {
-                thenFound = true
-            }
-
-            if (methodCallMatch && methodCallMatch[1] !== 'then' && thenFound) {
-                // Found a potential promise starting method call
-                className = methodCallMatch[2] || methodCallMatch[1];
-                method = methodCallMatch[3];
-                const CM = this.findClassAndMethodName(filePath, i);
-                className = CM.className || 'Root';
-                method = CM.method;
-
-                break;
-            }
-        }
-
-        return { method, className };
-    }
-
-    getStackMethod(error: Error): { className: string, method: string, filePath: string }[] {
-        let stack: { className: string, method: string, filePath: string }[] = [{ className: "Root", method: "", filePath: "" }, { className: "Root", method: "", filePath: "" }];
+    getStackMethod(error: Error): StackInfo[] {
+        let stack: StackInfo[] = [{ className: "Root", method: "", filePath: "", modifier: Modifier.Public }, { className: "Root", method: "", filePath: "" }];
         let i = 0;
         error.stack.split("\n").slice(1, 5).forEach((line) => {
             stack[i++] = this.processStackLine(line.replace(/umlAlias\./g, ""));
-
         })
         return stack.slice(0, 2);
     }
 
-    parseRemoteUrl(remote: string, local: string): string {
+    private parseRemoteUrl(remote: string, local: string): string {
         let overlapString = this.findOverlap(remote, local);
         if (overlapString) {
             local = local.replace(/\\/g, '/').toLowerCase();
@@ -108,7 +97,7 @@ export class StackHandler {
         }
     }
 
-    findOverlap(remote: string, local: string): string {
+    private findOverlap(remote: string, local: string): string {
         // Normalize path separators for the local path to forward slashes
         local = local.replace(/\\/g, '/').toLowerCase();
 
@@ -133,7 +122,7 @@ export class StackHandler {
         return testResult; // Return an empty string if there's no overlap
     }
 
-    processStackLine(line: string) {
+    private processStackLine(line: string) {
         if (line.includes("at ")) {
             for (const exclude of this.excludeList) {
                 if (line.includes(exclude)) {
@@ -161,9 +150,11 @@ export class StackHandler {
             } else {
                 let filePath = parts[0].replace(/\(?(.*?):[0-9].*\)?/gm, "$1");
                 let lineNumber = parts[0].replace(/.*?:([0-9]+):.*/, "$1");
-                let { method, className } = this.findPromiseStartMethod(filePath, parseInt(lineNumber));
+                let { method, className, modifier } = this.findClassAndMethodName(filePath, parseInt(lineNumber));
                 filePath = this.parseRemoteUrl(umlConfig.remoteBaseUrl, filePath);
-                return { className, method, filePath }
+                className = className || "Root";
+                method = method || undefined;
+                return { className, method, filePath, modifier }
             }
         }
     }

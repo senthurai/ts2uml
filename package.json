@@ -1,6 +1,6 @@
 {
   "name": "ts2uml",
-  "version": "0.0.51",
+  "version": "0.0.54",
   "description": "typescript workflow to uml sequence",
   "main": "index.js",
   "types": "index.d.ts",
@@ -20,6 +20,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.12.12",
-    "rimraf": "^5.0.8"
+    "rimraf": "^5.0.8",
+    "typescript": "^5.5.3"
   }
 }

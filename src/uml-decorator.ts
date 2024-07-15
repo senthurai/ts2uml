@@ -1,6 +1,6 @@
 
 import { _getFlowDiagram } from "./flow-diagram";
-import { GraphNode, Modifier, NodeType, _graphs, umlConfig } from './model';
+import { GraphNode, Modifier, NodeType, _graphs, umlConfig, StackInfo } from './model';
 import { _getSequence } from './sequence-diagram';
 import { _getSequenceTemplate } from "./sequence-template-diagram";
 import { StackHandler } from './StackHandler';
@@ -89,33 +89,27 @@ export function setTraceId(requestId: string) {
   _graphs._setRequestId(requestId);
 }
 
-function findModifier(originalMethod: any) {
-  const impl = originalMethod.toString();
-  if (impl.indexOf("private") > -1) {
-    return Modifier.Private;
-  } else if (impl.indexOf("protected") > -1) {
-    return Modifier.Protected;
-  } else {
-    return Modifier.Public;
-  }
-}
-
 
 function _applyGraph(this: any, originalMethod: any, args: any[], error: Error) {
   const requestId = _graphs._getRequestId();
-  let startTime, modifier, previous = { className: "Root", method: "", filePath: "" }, current = { className: "Root", method: "", filePath: "" };
+  let startTime, modifier, previous = new StackInfo(), current = new StackInfo();
 
   if (requestId) {
-    modifier = findModifier(originalMethod);
-    let stack = stackHandler.getStackMethod(error);
-    current = stack[0];
-    previous = stack[1] || { className: "Root", method: "", filePath: "" };
-    startTime = new Date();
-    const nodesById = _graphs.graphs[requestId] || [];
-    const newNode = new GraphNode(previous.className, previous.method, current.className, current.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request, modifier);
-    _graphs.remoteUrl[newNode.source] = previous.filePath;
-    nodesById.push(newNode);
-    _graphs.graphs[requestId] = nodesById;
+    try {
+
+      let stack = stackHandler.getStackMethod(error);
+      current = stack[0];
+      previous = stack[1] || new StackInfo();
+      modifier = previous.modifier;
+      startTime = new Date();
+      const nodesById = _graphs.graphs[requestId] || [];
+      const newNode = new GraphNode(previous.className, previous.method, current.className, current.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request, modifier);
+      _graphs.remoteUrl[newNode.source] = previous.filePath;
+      nodesById.push(newNode);
+      _graphs.graphs[requestId] = nodesById;
+    } catch (e) {
+      console.error("========****uml*****=========");
+    }
   }
   try {
     const result = originalMethod.call(this, ...args);
@@ -148,19 +142,25 @@ function handleException(requestId: string, e: any, previous: { className: strin
 
 function handleResponse(result: any, prevClassName: string, prevMethod: string, className: string, method: string, startTime: Date, modifier: Modifier) {
   const nodes = _graphs.graphs[_graphs._getRequestId()] || [];
-  if (result instanceof Promise) {
-    result.then((res: any) => {
-      const newNode = new GraphNode(prevClassName, prevMethod, className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync, modifier);
+
+  try {
+    if (result instanceof Promise) {
+      result.then((res: any) => {
+        const newNode = new GraphNode(prevClassName, prevMethod, className, method, res && Object.keys(res).length ? JSON.stringify(res) : "", new Date().getTime() - startTime.getTime(), NodeType.ResponseAsync, modifier);
+        nodes.push(newNode);
+        _graphs.graphs[_graphs._getRequestId()] = nodes;
+        return res;
+      })
+      const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), NodeType.AsyncReturn, Modifier.Public);
       nodes.push(newNode);
-      return res;
-    })
-    const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : "", new Date().getTime() - startTime.getTime(), NodeType.AsyncReturn, Modifier.Public);
-    nodes.push(newNode);
-    _graphs.graphs[_graphs._getRequestId()] = nodes;
-  } else {
-    const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : result, new Date().getTime() - startTime.getTime(), result instanceof Boolean ? NodeType.Boolean : NodeType.Response, Modifier.Public);
-    nodes.push(newNode);
-    _graphs.graphs[_graphs._getRequestId()] = nodes;
+      _graphs.graphs[_graphs._getRequestId()] = nodes;
+    } else {
+      const newNode = new GraphNode(prevClassName, prevMethod, className, method, result && Object.keys(result).length ? JSON.stringify(result) : result, new Date().getTime() - startTime.getTime(), result instanceof Boolean ? NodeType.Boolean : NodeType.Response, Modifier.Public);
+      nodes.push(newNode);
+      _graphs.graphs[_graphs._getRequestId()] = nodes;
+    }
+  } catch (e) {
+    console.log("-----****uml****----");
   }
 }
 

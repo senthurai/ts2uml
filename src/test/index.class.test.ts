@@ -23,15 +23,15 @@ export class MyClass<T> {
     if (true) {
       console.log(" Hello " + this.i++);
     }
-   await ref.then(async () => {
+    await ref.then(async () => {
       for (let i = 0; i < 2; i++) {
 
         await this.myMethod5();
       }
     });
   }
- 
-  public static myMethod2() {
+
+  public static myMethod2 = () => {
 
     // Method implementation
     MyClass2.myMethod4();
@@ -46,7 +46,8 @@ export class MyClass<T> {
   private async myMethod5() {
     // Method implementation
     console.log(" end the world 5");
- //   throw new Error("Error");
+    this.myMethod3();
+    //   throw new Error("Error");
   }
 }
 
