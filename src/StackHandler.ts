@@ -1,5 +1,5 @@
 
-import { _graphs, umlConfig, Modifier, StackInfo, Clazz, SourceData, Method } from './model';
+import { _graphs, umlConfig, Modifier, StackInfo, Clazz, SourceData, Method, GraphNode, abbreviate } from './model';
 import * as ts from 'typescript';
 import * as fs from 'fs';
 export class StackHandler {
@@ -16,7 +16,6 @@ export class StackHandler {
             currentMethodName = classAndMethod?.method;
             modifier = classAndMethod?.modifier;
             if (currentMethodName) {
-                console.log(`---------------------------------------------------------------------------- trip saved`)
                 return { className: currentClassName, method: currentMethodName, modifier };
             }
         }
@@ -82,10 +81,26 @@ export class StackHandler {
     getStackMethod(error: Error): StackInfo[] {
         let stack: StackInfo[] = [{ className: "Root", method: "", filePath: "", modifier: Modifier.Public }, { className: "Root", method: "", filePath: "" }];
         let i = 0;
-        error.stack.split("\n").slice(1, 5).forEach((line) => {
-            stack[i++] = this.processStackLine(line.replace(/umlAlias\./g, ""));
+        const nodes = _graphs.graphs[_graphs._getRequestId()] || [];
+        error.stack.split("\n").slice(1, 16).forEach((line, i) => {
+            const stackInstance = this.processStackLine(line.replace(/umlAlias\./g, ""));
+
+            if (stack.length < 3 && stackInstance && (nodes.length < 5 || (i < 1 || this.findIfStackInstanceExistInNodes(stackInstance, nodes)))) {
+                stack[i++] = stackInstance;
+            }
         })
         return stack.slice(0, 2);
+    }
+    findIfStackInstanceExistInNodes(stackInstance: { className: string, method: string, filePath: string, modifier: Modifier }, nodes: GraphNode[]): GraphNode | undefined {
+
+        //iterate over the nodes in reverse order and find the first node that matches the stack instance
+        for (let i = nodes.length - 1; i >= 0; i--) {
+            const node = nodes[i];
+            if (!stackInstance?.method || node.recMethod === abbreviate(stackInstance?.method)) {
+                return node;
+            }
+        }
+        console.log("Stack instance not found in nodes", stackInstance);
     }
 
     private parseRemoteUrl(remote: string, local: string): string {
@@ -123,7 +138,8 @@ export class StackHandler {
     }
 
     private processStackLine(line: string) {
-        if (line.includes("at ")) {
+        line = line.replace("async ", "");
+        if (line.replace("async ", "").includes("at ")) {
             for (const exclude of this.excludeList) {
                 if (line.includes(exclude)) {
                     return null;
@@ -143,10 +159,10 @@ export class StackHandler {
                     className = _graphs.methods[method];
                 }
                 let filePath = localFilePath;
-                if (umlConfig.enableLink) {
+                if (umlConfig.remoteBaseUrl) {
                     filePath = this.parseRemoteUrl(umlConfig.remoteBaseUrl, localFilePath);
                 }
-                return { className, method, filePath };
+                return { className, method, filePath, modifier: Modifier.Public };
             } else {
                 let filePath = parts[0].replace(/\(?(.*?):[0-9].*\)?/gm, "$1");
                 let lineNumber = parts[0].replace(/.*?:([0-9]+):.*/, "$1");

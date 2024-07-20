@@ -73,3 +73,49 @@ The request ID can be assigned to the sequence ID and can be used in the AWS con
 ### ./.ts2uml/
 
 the workspace folder will contain a folder after successful execution which contains the diagram from your code
+
+# UmlConfig  
+## Overview
+
+The  umlConfig instance is designed to hold configuration settings for generating UML (Unified Modeling Language) diagrams and provide certail AOP out of box. It provides options to configure the base URL for remote resources, enable linking within the UML diagrams, and control error logging.
+
+## Properties
+
+### `remoteBaseUrl: string`
+
+- **Description**: Specifies the base URL for any remote resources that may be needed for the UML diagram generation. This is particularly useful when diagrams include elements that are hosted remotely.
+- **Default Value**: `null`
+
+### `disableErrorLogging: boolean`
+
+- **Description**: Controls whether error logging is disabled. Setting this to `true` suppresses error messages that would normally be logged during the diagram generation process. This can be useful in production environments where logging errors to the console is undesirable.
+- **Default Value**: `false`
+
+## Example Usage
+
+```typescript
+// Importing the UmlConfig class
+import { umlConfig } from './model';
+
+ 
+
+// Setting the remote base URL for remote resources
+umlConfig.remoteBaseUrl = 'https://example.com/resources/';
+ 
+
+// Disabling error logging
+umlConfig.disableErrorLogging = true;
+
+// The config object now
+
+ contains
+
+ the customized settings
+console.log(umlConfig);
+```
+
+## Notes
+
+- The `remoteBaseUrl` property is particularly important when dealing with UML diagrams that reference external resources. Ensure that the URL is accessible and correct.
+- Enabling links within diagrams enhances interactivity but requires that the diagram rendering engine supports this feature.
+- Disabling error logging (`disableErrorLogging`) should be used judiciously, as it can make debugging more difficult by suppressing potentially useful error messages.

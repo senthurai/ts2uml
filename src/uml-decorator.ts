@@ -96,14 +96,13 @@ function _applyGraph(this: any, originalMethod: any, args: any[], error: Error) 
 
   if (requestId) {
     try {
-
+      startTime = new Date();
       let stack = stackHandler.getStackMethod(error);
       current = stack[0];
       previous = stack[1] || new StackInfo();
       modifier = previous.modifier;
-      startTime = new Date();
       const nodesById = _graphs.graphs[requestId] || [];
-      const newNode = new GraphNode(previous.className, previous.method, current.className, current.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request, modifier);
+      const newNode = new GraphNode(previous?.className, previous?.method, current?.className, current?.method, args && Object.keys(args).length ? JSON.stringify(args) : "", startTime.getTime(), NodeType.Request, modifier);
       _graphs.remoteUrl[newNode.source] = previous.filePath;
       nodesById.push(newNode);
       _graphs.graphs[requestId] = nodesById;

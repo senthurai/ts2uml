@@ -3,35 +3,25 @@ import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 
-const files = ['uml-sprinkler', 'uml-sprinkler.bat']
-const dest = join(__dirname, './../../');
-const local = join(__dirname, './../../node_modules/.bin');
+const files = ['uml-sprinkler', 'uml-sprinkler.bat'];
+const destDir = join(__dirname, './../../');
+const localDir = join(__dirname, './../../node_modules/.bin');
 
 files.forEach(file => {
     const src = join(__dirname, file);
-    try {
-        if (existsSync(src)) {
-            if (existsSync(local)) {
-                console.log(`copying ${src} to ${local}`);
-                copyFileSync(src, local);
-            } else {
-                console.log(`copying ${src} to ${dest}`);
-                copyFileSync(src, dest);
-            }
-        }
-        else {
-            console.log(`file ${src} does not exist`);
-        }
-    } catch (e) {
-        console.log(e);
+    if (existsSync(src)) {
+        const destPath = existsSync(localDir) ? join(localDir, file) : join(destDir, file);
+        console.log(`Copying ${src} to ${destPath}`);
+        copyFileSync(src, destPath);
+    } else {
+        console.log(`File ${src} does not exist`);
     }
-
 });
 handlePackageJson();
 
 function handlePackageJson() {
     // Step 2: Define the path to the package.json file
-    const packageJsonPath = join(dest, 'package.json');
+    const packageJsonPath = join(destDir, 'package.json');
 
     // Step 3: Read the package.json file into a variable
     if (existsSync(packageJsonPath)) {

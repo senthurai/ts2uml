@@ -25,14 +25,14 @@ export class GraphNode {
   readonly recMethod: string;
   readonly reciever: string;
   readonly srcMethod: string;
-  constructor(source: string, srcMethod: string, reciever: string, method: string, public readonly args: string, public timestamp: number, public type: NodeType, public modifier: Modifier = Modifier.Public) {
+  constructor(source: string, srcMethod: string, reciever: string, recMethod: string, public readonly args: string, public timestamp: number, public type: NodeType, public modifier: Modifier = Modifier.Public) {
     this.source = source && abbreviate(source);
-    this.recMethod = method && abbreviate(method);
+    this.recMethod = recMethod && abbreviate(recMethod);
     this.srcMethod = srcMethod && abbreviate(srcMethod);
     this.reciever = reciever && abbreviate(reciever);
   }
 }
-function abbreviate(name: string) {
+export function abbreviate(name: string) {
   const newName = name.replace(/[_$]/g, "");
   if (!newName || _graphs.dedups[newName]) return _graphs.dedups[newName]
   let i = 1;
@@ -53,8 +53,7 @@ export function expand(short: string): string {
   return _graphs.dedups[short] || short;
 }
 class UmlConfig {
-  remoteBaseUrl: string = null;
-  enableLink: boolean = false;
+  remoteBaseUrl: string = null; 
   disableErrorLogging: boolean = false;
 }
 class SequenceGraph {

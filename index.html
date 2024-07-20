@@ -1,0 +1,136 @@
+<html>
+
+<head>
+    <title>Chat</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <style>
+        #chatWindows {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .chatWindow {
+            width: 80%;
+            height: 80%;
+            border: 1px solid black;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+       
+        }
+        .text-entry{
+            width: 100%;
+            height: 100px;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .text-entry-control{
+            width: 100%;
+            height: 100px;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+
+        .chatBox {
+            width: 100%;
+            height: 80%;
+            overflow-y: scroll;
+        }
+
+        .left-message {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        .right-message {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .left-message div {
+            background-color: #88a4f0;
+            padding: 10px;
+            margin: 10px;
+            color: #fff;
+            border-radius: 10px;
+        }
+
+        .right-message div {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+        }
+
+        .avatar {
+            border-radius: 50%;
+            width: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chatWindows">
+        <div id="NilaSenthuraiChatWindow" class="chatWindow">
+            <img class="avatar" src="./images/sen.png" height="50" width="50" alt="Avatar">
+            <div>Nila</div>
+            <div class="chatBox">
+                <div class="left-message">
+                    <div>hello</div>
+                </div>
+                <div class="right-message">
+                    <div>Hi</div>
+                </div>
+            </div>
+            <div class="text-entry">
+                <textarea name="" id=""  class="text-entry-contrl"></textarea>
+            </div>
+        </div>
+        <div id="pavithaSenthuraiChatWindow" class="chatWindow">
+            <img class="avatar" src="./images/sen.png" height="50" width="50" alt="Avatar">
+            <div>Senthurai</div>
+            <div class="chatBox">
+                <div class="left-message">
+                    <div>hello</div>
+                </div>
+                <div class="right-message">
+                    <div>Hi</div>
+                </div>
+
+            </div>
+            <div class="text-entry">
+                <textarea name="" class="text-entry-contrl"></textarea>
+            </div>
+        </div>
+        <div id="senthuraiPathivraChatWindow" class="chatWindow">
+            <img class="avatar" src="./images/pav.png" height="50" width="50" alt="Avatar">
+            <div>Pavithra</div>
+            <div class="chatBox">
+                <div class="right-message">
+                    <div>hello</div>
+                </div>
+                <div class="left-message">
+                    <div>Hi</div>
+                </div>
+            </div>
+            <div class="text-entry">
+                <textarea name=""  class="text-entry-contrl" id=""></textarea>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

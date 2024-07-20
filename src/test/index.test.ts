@@ -1,4 +1,5 @@
 // Create a decorator function to apply annotations  
+import { getMasterFlowDiagram } from "../flow-diagram";
 import { getFlowDiagram, getSequence, getSequenceTemplate, setTraceId, uml } from "../uml-decorator";
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 //
@@ -57,4 +58,5 @@ Promise.all(l).then(() => {
   console.log("----" + getFlowDiagram() + "----");
   console.log("----" + getSequence() + "----");
   console.log("----" + getSequenceTemplate() + "----");
+  getMasterFlowDiagram();
 });
